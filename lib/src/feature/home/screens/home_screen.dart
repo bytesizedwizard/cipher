@@ -1,3 +1,5 @@
+import 'package:cipher/src/feature/auth/providers/auth_providers.dart';
+import 'package:cipher/src/feature/auth/utils/constants.dart';
 import 'package:cipher/src/providers/colors.dart';
 import 'package:cipher/src/providers/styles.dart';
 import 'package:cipher/src/ui/widgets/app_bar.dart';
@@ -20,6 +22,8 @@ class HomeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final palette = ref.watch(colorPaletteProvider);
     final textStyle = ref.watch(textStyleProvider);
+
+    final items = ref.watch(authControllerProvider).values;
 
     return Scaffold(
       appBar: BaseAppBar(
@@ -53,53 +57,37 @@ class HomeScreen extends ConsumerWidget {
       ),
       extendBodyBehindAppBar: true,
       body: SafeArea(
+        minimum: const EdgeInsets.all(0),
         child: Scrollbar(
           thickness: 0,
           thumbVisibility: false,
           trackVisibility: false,
-          child: ListView(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            children: [
-              ListTile(
-                title: const Text("Instagram"),
-                titleTextStyle: textStyle.heading3,
-                contentPadding: EdgeInsets.all(0),
-                isThreeLine: false,
-                onTap: () {
-                  // copy to clipboard
-                  Clipboard.setData(ClipboardData(text: "099035"));
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Copied to clipboard')),
-                  );
-                },
-                subtitle: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Text(
-                      "099035",
-                      style: textStyle.heading1.copyWith(
-                        fontSize: 28,
-                        height: 1.5,
-                        fontWeight: FontWeight.bold,
-                        fontFamily: GoogleFonts.inter().fontFamily,
-                      ),
+          child: items.isEmpty
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 40.0),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Text(
+                          "Nothing to see here...",
+                          style: textStyle.heading2,
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          "Tap the + button below to add your first account.",
+                          style: textStyle.body.copyWith(
+                            color: palette.accent.withValues(alpha: 0.7),
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 5),
-                    Text(
-                      "bytesizedwizard",
-                      style: textStyle.body.copyWith(
-                        color: palette.accent.withValues(alpha: 0.5),
-                      ),
-                    ),
-                  ],
-                ),
-                style: ListTileStyle.list,
-                horizontalTitleGap: 10,
-                trailing: CircularTimer(seconds: 30),
-              ),
-              Divider(),
-            ],
-          ),
+                  ),
+                )
+              : _buildAccountList(context, items, textStyle, palette),
         ),
       ),
       bottomNavigationBar: BottomBar(),
@@ -110,6 +98,62 @@ class HomeScreen extends ConsumerWidget {
         child: Icon(Icons.add),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+    );
+  }
+
+  Widget _buildAccountList(
+    BuildContext context,
+    Iterable<AccountView> items,
+    Style textStyle,
+    ColorPalette palette,
+  ) {
+    return ListView(
+      children: [
+        for (final item in items) ...[
+          ListTile(
+            title: Text(item.account.issuer),
+            titleTextStyle: textStyle.heading3,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 20),
+            isThreeLine: false,
+            onTap: () {
+              // copy to clipboard
+              Clipboard.setData(ClipboardData(text: item.otp));
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(const SnackBar(content: Text('Copied')));
+            },
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  item.otp,
+                  style: textStyle.heading1.copyWith(
+                    fontSize: 28,
+                    height: 1.5,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: GoogleFonts.inter().fontFamily,
+                  ),
+                ),
+                const SizedBox(width: 5),
+                if (item.account.label.isNotEmpty)
+                  Text(
+                    item.account.label,
+                    style: textStyle.body.copyWith(
+                      color: palette.accent.withValues(alpha: 0.5),
+                    ),
+                  ),
+              ],
+            ),
+            style: ListTileStyle.list,
+            horizontalTitleGap: 10,
+            trailing: CircularTimer(
+              secondsLeft: item.secondsLeft,
+              totalSeconds: AuthConstants.defaultPeriod,
+            ),
+          ),
+          Divider(),
+        ],
+      ],
     );
   }
 }

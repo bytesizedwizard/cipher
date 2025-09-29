@@ -1,9 +1,15 @@
+import 'package:cipher/src/feature/auth/models/auth_models.dart';
+import 'package:cipher/src/feature/auth/providers/auth_providers.dart';
+import 'package:cipher/src/feature/auth/utils/constants.dart';
 import 'package:cipher/src/providers/colors.dart';
 import 'package:cipher/src/providers/styles.dart';
 import 'package:cipher/src/ui/widgets/app_bar.dart';
+import 'package:cipher/src/ui/widgets/buttons.dart';
 import 'package:cipher/src/ui/widgets/text_field.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:gap/gap.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
@@ -44,6 +50,9 @@ class _AddEntityScreenState extends ConsumerState<AddEntityScreen> {
   Widget build(BuildContext context) {
     final textStyles = ref.watch(textStyleProvider);
     final palette = ref.watch(colorPaletteProvider);
+
+    final formKey = useMemoized(() => GlobalKey<FormState>());
+    final ObjectRef<Map<String, String>> accountDetails = useRef({});
 
     return Scaffold(
       appBar: BaseAppBar(
@@ -113,7 +122,26 @@ class _AddEntityScreenState extends ConsumerState<AddEntityScreen> {
                   },
                   fit: BoxFit.contain,
                   onDetect: (result) {
-                    debugPrint(result.barcodes.first.rawValue);
+                    final keyUri = result.barcodes.first.rawValue;
+                    if (keyUri != null &&
+                        keyUri.startsWith(AuthConstants.uriScheme)) {
+                      ref
+                          .read(authControllerProvider.notifier)
+                          .addAccountFromUri(keyUri);
+                      context.pop();
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            "Scanned code is not valid. Please try again.",
+                            style: textStyles.body.copyWith(
+                              color: palette.primary,
+                            ),
+                          ),
+                          backgroundColor: palette.error,
+                        ),
+                      );
+                    }
                   },
                 ),
               ),
@@ -124,16 +152,57 @@ class _AddEntityScreenState extends ConsumerState<AddEntityScreen> {
               ),
               const Gap(10),
               Form(
+                key: formKey,
                 child: Column(
                   children: [
                     CustomTextFormField(
                       hintText: "Account Name",
                       prefixIcon: Icon(Symbols.person, color: palette.accent),
+                      onSaved: (value) {
+                        accountDetails.value['name'] = value ?? '';
+                      },
                     ),
                     const Gap(15),
                     CustomTextFormField(
                       hintText: "Secret Key",
                       prefixIcon: Icon(Symbols.key, color: palette.accent),
+                      onSaved: (value) {
+                        accountDetails.value['secret'] = value ?? '';
+                      },
+                    ),
+                    const Gap(15),
+                    SemanticElevatedButton(
+                      label: "Add Account",
+                      onPressed: () {
+                        if (formKey.currentState?.validate() ?? false) {
+                          formKey.currentState?.save();
+
+                          final secret = accountDetails.value['secret'] ?? '';
+                          String label = accountDetails.value['name'] ?? '';
+                          String issuer = '';
+
+                          if (label.contains(":")) {
+                            issuer = label.split(":").first;
+                            label = label.split(":").last;
+                          }
+
+                          final account = Account(
+                            label: label,
+                            issuer: issuer,
+                            algorithm: AuthConstants.algorithmSHA1,
+                            digits: 6,
+                            period: 30,
+                            type: 'totp',
+                          );
+
+                          ref
+                              .read(authControllerProvider.notifier)
+                              .addAccount(account, secret);
+
+                          context.pop();
+                        }
+                      },
+                      semanticLabel: "Add new account",
                     ),
                   ],
                 ),
