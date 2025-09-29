@@ -2,12 +2,20 @@ import 'package:cipher/src/providers/colors.dart';
 import 'package:cipher/src/providers/theme.dart';
 import 'package:cipher/src/routes.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
 
-  runApp(ProviderScope(child: const CipherApp()));
+  runApp(
+    ProviderScope(
+      child: SensitiveContent(
+        sensitivity: ContentSensitivity.sensitive,
+        child: const CipherApp(),
+      ),
+    ),
+  );
 }
 
 class CipherApp extends ConsumerWidget {
