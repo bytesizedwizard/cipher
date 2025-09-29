@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
+import '../../providers/colors.dart';
+
 /// A lightweight, themable icon-only button built on top of [IconButton].
 ///
 /// This widget is a [ConsumerWidget] so it can read Riverpod providers when
@@ -128,6 +130,92 @@ class FlatIconButton extends ConsumerWidget {
       mouseCursor: mouseCursor,
       focusNode: focusNode,
       tooltip: tooltip,
+    );
+  }
+}
+
+class SemanticElevatedButton extends ConsumerWidget {
+  const SemanticElevatedButton({
+    super.key,
+    required this.label,
+    required this.onPressed,
+    required this.semanticLabel,
+    this.icon,
+    this.buttonColor,
+    this.labelColor,
+    this.iconColor,
+    this.iconSize = 24.0,
+    this.borderRadius = 12.0,
+    this.padding = const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14.0),
+    this.elevation = 2.0,
+    this.border,
+  });
+
+  final String label;
+  final VoidCallback? onPressed;
+  final String semanticLabel;
+  final Widget? icon;
+  final Color? buttonColor;
+  final Color? labelColor;
+  final Color? iconColor;
+  final double iconSize;
+  final double borderRadius;
+  final EdgeInsetsGeometry padding;
+  final double elevation;
+  final BorderSide? border;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final palette = ref.watch(colorPaletteProvider);
+
+    return Semantics(
+      label: semanticLabel,
+      button: true,
+      child: ElevatedButton(
+        onPressed: onPressed,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: buttonColor ?? palette.accent,
+          foregroundColor: labelColor ?? palette.primary,
+          padding: padding,
+          elevation: elevation,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(borderRadius),
+            side: border ?? BorderSide.none,
+          ),
+          minimumSize: const Size.fromHeight(48),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.max,
+          mainAxisAlignment: icon != null
+              ? MainAxisAlignment.spaceBetween
+              : MainAxisAlignment.center,
+          children: [
+            if (icon != null)
+              IconTheme(
+                data: IconThemeData(
+                  color: iconColor ?? palette.primary,
+                  size: iconSize,
+                ),
+                child: icon!,
+              ),
+            if (icon != null) const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                label,
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                  color: labelColor ?? palette.primary,
+                ),
+              ),
+            ),
+            if (icon != null)
+              const Opacity(
+                opacity: 0,
+                child: Icon(Icons.close),
+              ), // balances layout
+          ],
+        ),
+      ),
     );
   }
 }
