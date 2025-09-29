@@ -11,41 +11,42 @@ part of 'auth_models.dart';
 
 // dart format off
 T _$identity<T>(T value) => value;
-/// @nodoc
-mixin _$AuthEntity {
 
- String get label; String get secret; String get issuer; String get algorithm; int get digits; int get period; String get type;
-/// Create a copy of AuthEntity
+/// @nodoc
+mixin _$Account {
+
+ String get label; String get issuer; String get algorithm; int get digits; int get period; String get type; String? get otp; set otp(String? value);
+/// Create a copy of Account
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
 @pragma('vm:prefer-inline')
-$AuthEntityCopyWith<AuthEntity> get copyWith => _$AuthEntityCopyWithImpl<AuthEntity>(this as AuthEntity, _$identity);
+$AccountCopyWith<Account> get copyWith => _$AccountCopyWithImpl<Account>(this as Account, _$identity);
 
 
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AuthEntity&&(identical(other.label, label) || other.label == label)&&(identical(other.secret, secret) || other.secret == secret)&&(identical(other.issuer, issuer) || other.issuer == issuer)&&(identical(other.algorithm, algorithm) || other.algorithm == algorithm)&&(identical(other.digits, digits) || other.digits == digits)&&(identical(other.period, period) || other.period == period)&&(identical(other.type, type) || other.type == type));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Account&&(identical(other.label, label) || other.label == label)&&(identical(other.issuer, issuer) || other.issuer == issuer)&&(identical(other.algorithm, algorithm) || other.algorithm == algorithm)&&(identical(other.digits, digits) || other.digits == digits)&&(identical(other.period, period) || other.period == period)&&(identical(other.type, type) || other.type == type)&&(identical(other.otp, otp) || other.otp == otp));
 }
 
-
+@JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,label,secret,issuer,algorithm,digits,period,type);
+int get hashCode => Object.hash(runtimeType,label,issuer,algorithm,digits,period,type,otp);
 
 @override
 String toString() {
-  return 'AuthEntity(label: $label, secret: $secret, issuer: $issuer, algorithm: $algorithm, digits: $digits, period: $period, type: $type)';
+  return 'Account(label: $label, issuer: $issuer, algorithm: $algorithm, digits: $digits, period: $period, type: $type, otp: $otp)';
 }
 
 
 }
 
 /// @nodoc
-abstract mixin class $AuthEntityCopyWith<$Res>  {
-  factory $AuthEntityCopyWith(AuthEntity value, $Res Function(AuthEntity) _then) = _$AuthEntityCopyWithImpl;
+abstract mixin class $AccountCopyWith<$Res>  {
+  factory $AccountCopyWith(Account value, $Res Function(Account) _then) = _$AccountCopyWithImpl;
 @useResult
 $Res call({
- String label, String secret, String issuer, String algorithm, int digits, int period, String type
+ String label, String issuer, String algorithm, int digits, int period, String type, String? otp
 });
 
 
@@ -53,33 +54,33 @@ $Res call({
 
 }
 /// @nodoc
-class _$AuthEntityCopyWithImpl<$Res>
-    implements $AuthEntityCopyWith<$Res> {
-  _$AuthEntityCopyWithImpl(this._self, this._then);
+class _$AccountCopyWithImpl<$Res>
+    implements $AccountCopyWith<$Res> {
+  _$AccountCopyWithImpl(this._self, this._then);
 
-  final AuthEntity _self;
-  final $Res Function(AuthEntity) _then;
+  final Account _self;
+  final $Res Function(Account) _then;
 
-/// Create a copy of AuthEntity
+/// Create a copy of Account
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? label = null,Object? secret = null,Object? issuer = null,Object? algorithm = null,Object? digits = null,Object? period = null,Object? type = null,}) {
-  return _then(_self.copyWith(
+@pragma('vm:prefer-inline') @override $Res call({Object? label = null,Object? issuer = null,Object? algorithm = null,Object? digits = null,Object? period = null,Object? type = null,Object? otp = freezed,}) {
+  return _then(Account(
 label: null == label ? _self.label : label // ignore: cast_nullable_to_non_nullable
-as String,secret: null == secret ? _self.secret : secret // ignore: cast_nullable_to_non_nullable
 as String,issuer: null == issuer ? _self.issuer : issuer // ignore: cast_nullable_to_non_nullable
 as String,algorithm: null == algorithm ? _self.algorithm : algorithm // ignore: cast_nullable_to_non_nullable
 as String,digits: null == digits ? _self.digits : digits // ignore: cast_nullable_to_non_nullable
 as int,period: null == period ? _self.period : period // ignore: cast_nullable_to_non_nullable
 as int,type: null == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
-as String,
+as String,otp: freezed == otp ? _self.otp : otp // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 
 }
 
 
-/// Adds pattern-matching-related methods to [AuthEntity].
-extension AuthEntityPatterns on AuthEntity {
+/// Adds pattern-matching-related methods to [Account].
+extension AccountPatterns on Account {
 /// A variant of `map` that fallback to returning `orElse`.
 ///
 /// It is equivalent to doing:
@@ -92,11 +93,10 @@ extension AuthEntityPatterns on AuthEntity {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _AuthEntity value)?  $default,{required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({required TResult orElse(),}){
 final _that = this;
 switch (_that) {
-case _AuthEntity() when $default != null:
-return $default(_that);case _:
+case _:
   return orElse();
 
 }
@@ -114,11 +114,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _AuthEntity value)  $default,){
+@optionalTypeArgs TResult map<TResult extends Object?>(){
 final _that = this;
 switch (_that) {
-case _AuthEntity():
-return $default(_that);case _:
+case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -135,11 +134,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _AuthEntity value)?  $default,){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(){
 final _that = this;
 switch (_that) {
-case _AuthEntity() when $default != null:
-return $default(_that);case _:
+case _:
   return null;
 
 }
@@ -156,10 +154,9 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String label,  String secret,  String issuer,  String algorithm,  int digits,  int period,  String type)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({required TResult orElse(),}) {final _that = this;
 switch (_that) {
-case _AuthEntity() when $default != null:
-return $default(_that.label,_that.secret,_that.issuer,_that.algorithm,_that.digits,_that.period,_that.type);case _:
+case _:
   return orElse();
 
 }
@@ -177,10 +174,9 @@ return $default(_that.label,_that.secret,_that.issuer,_that.algorithm,_that.digi
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String label,  String secret,  String issuer,  String algorithm,  int digits,  int period,  String type)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>() {final _that = this;
 switch (_that) {
-case _AuthEntity():
-return $default(_that.label,_that.secret,_that.issuer,_that.algorithm,_that.digits,_that.period,_that.type);case _:
+case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -197,92 +193,13 @@ return $default(_that.label,_that.secret,_that.issuer,_that.algorithm,_that.digi
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String label,  String secret,  String issuer,  String algorithm,  int digits,  int period,  String type)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>() {final _that = this;
 switch (_that) {
-case _AuthEntity() when $default != null:
-return $default(_that.label,_that.secret,_that.issuer,_that.algorithm,_that.digits,_that.period,_that.type);case _:
+case _:
   return null;
 
 }
 }
-
-}
-
-/// @nodoc
-
-
-class _AuthEntity extends AuthEntity {
-   _AuthEntity({required this.label, required this.secret, required this.issuer, required this.algorithm, required this.digits, required this.period, required this.type}): super._();
-  
-
-@override final  String label;
-@override final  String secret;
-@override final  String issuer;
-@override final  String algorithm;
-@override final  int digits;
-@override final  int period;
-@override final  String type;
-
-/// Create a copy of AuthEntity
-/// with the given fields replaced by the non-null parameter values.
-@override @JsonKey(includeFromJson: false, includeToJson: false)
-@pragma('vm:prefer-inline')
-_$AuthEntityCopyWith<_AuthEntity> get copyWith => __$AuthEntityCopyWithImpl<_AuthEntity>(this, _$identity);
-
-
-
-@override
-bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AuthEntity&&(identical(other.label, label) || other.label == label)&&(identical(other.secret, secret) || other.secret == secret)&&(identical(other.issuer, issuer) || other.issuer == issuer)&&(identical(other.algorithm, algorithm) || other.algorithm == algorithm)&&(identical(other.digits, digits) || other.digits == digits)&&(identical(other.period, period) || other.period == period)&&(identical(other.type, type) || other.type == type));
-}
-
-
-@override
-int get hashCode => Object.hash(runtimeType,label,secret,issuer,algorithm,digits,period,type);
-
-@override
-String toString() {
-  return 'AuthEntity(label: $label, secret: $secret, issuer: $issuer, algorithm: $algorithm, digits: $digits, period: $period, type: $type)';
-}
-
-
-}
-
-/// @nodoc
-abstract mixin class _$AuthEntityCopyWith<$Res> implements $AuthEntityCopyWith<$Res> {
-  factory _$AuthEntityCopyWith(_AuthEntity value, $Res Function(_AuthEntity) _then) = __$AuthEntityCopyWithImpl;
-@override @useResult
-$Res call({
- String label, String secret, String issuer, String algorithm, int digits, int period, String type
-});
-
-
-
-
-}
-/// @nodoc
-class __$AuthEntityCopyWithImpl<$Res>
-    implements _$AuthEntityCopyWith<$Res> {
-  __$AuthEntityCopyWithImpl(this._self, this._then);
-
-  final _AuthEntity _self;
-  final $Res Function(_AuthEntity) _then;
-
-/// Create a copy of AuthEntity
-/// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? label = null,Object? secret = null,Object? issuer = null,Object? algorithm = null,Object? digits = null,Object? period = null,Object? type = null,}) {
-  return _then(_AuthEntity(
-label: null == label ? _self.label : label // ignore: cast_nullable_to_non_nullable
-as String,secret: null == secret ? _self.secret : secret // ignore: cast_nullable_to_non_nullable
-as String,issuer: null == issuer ? _self.issuer : issuer // ignore: cast_nullable_to_non_nullable
-as String,algorithm: null == algorithm ? _self.algorithm : algorithm // ignore: cast_nullable_to_non_nullable
-as String,digits: null == digits ? _self.digits : digits // ignore: cast_nullable_to_non_nullable
-as int,period: null == period ? _self.period : period // ignore: cast_nullable_to_non_nullable
-as int,type: null == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
-as String,
-  ));
-}
-
 
 }
 
