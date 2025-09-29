@@ -46,6 +46,9 @@ dependencies:
   smooth_page_indicator: ^1.2.1
   mobile_scanner: ^7.0.1
   gap: ^3.0.1
+  shared_preferences: ^2.5.3
+  base32: ^2.2.0
+  crypto: ^3.0.6
 
 dev_dependencies:
   flutter_test:
