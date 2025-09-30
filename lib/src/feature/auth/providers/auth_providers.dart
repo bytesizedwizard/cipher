@@ -48,7 +48,7 @@ class AuthController extends _$AuthController with WidgetsBindingObserver {
   }
 
   Future<void> _loadAndStart() async {
-    _accounts = await _authService.getAccounts(); // metadata only
+    _accounts = await _authService.getAccounts(''); // metadata only
     // Optionally pre-load secrets into _secretCache by calling totp service
     // for (final a in _accounts) { _secretCache[a.id] = await _totpService.secretBytesFor(a); }
     _tick(); // immediate
@@ -73,8 +73,8 @@ class AuthController extends _$AuthController with WidgetsBindingObserver {
   }
 
   // allow manual refresh or when accounts change
-  Future<void> refreshAccounts() async {
-    _accounts = await _authService.getAccounts();
+  Future<void> refreshAccounts(String query) async {
+    _accounts = await _authService.getAccounts(query);
     _tick();
   }
 
@@ -97,7 +97,8 @@ class AuthController extends _$AuthController with WidgetsBindingObserver {
 
   Future<void> addAccount(Account account, String secret) async {
     await _authService.addAccount(account, secret);
-    await refreshAccounts();
+
+    await refreshAccounts('');
   }
 
   Future<void> addAccountFromUri(String uri) async {

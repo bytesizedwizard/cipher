@@ -15,7 +15,7 @@ class AuthService {
 
   /// Retrieves all stored Account objects from the storage service.
   /// Returns an empty list if no accounts are found.
-  Future<List<Account>> getAccounts() async {
+  Future<List<Account>> getAccounts(String query) async {
     final Map<String, Object?> all = await _storageService.readAll(
       source: SecureStorageSource.sharedPreferences,
     );
@@ -29,6 +29,19 @@ class AuthService {
         }
 
         Account account = Account.fromJson(json.decode(value.toString()));
+
+        if (query.isNotEmpty) {
+          bool matches = true;
+
+          final accountValue = account.toJson().toString().toLowerCase();
+          if (!accountValue.contains(query.toLowerCase())) {
+            matches = false;
+          }
+
+          if (!matches) {
+            continue;
+          }
+        }
 
         accounts.add(account);
       } catch (e) {

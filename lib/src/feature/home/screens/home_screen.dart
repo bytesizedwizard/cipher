@@ -10,12 +10,13 @@ import 'package:cipher/src/ui/widgets/text_field.dart';
 import 'package:cipher/src/ui/widgets/timer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
-class HomeScreen extends ConsumerWidget {
+class HomeScreen extends HookConsumerWidget {
   const HomeScreen({super.key});
 
   @override
@@ -24,6 +25,21 @@ class HomeScreen extends ConsumerWidget {
     final textStyle = ref.watch(textStyleProvider);
 
     final items = ref.watch(authControllerProvider).values;
+
+    final searchInput = useState<String?>(null);
+
+    final debouncedSearchText = useDebounced(
+      searchInput.value,
+      const Duration(milliseconds: 300),
+    );
+
+    useEffect(() {
+      ref
+          .read(authControllerProvider.notifier)
+          .refreshAccounts(debouncedSearchText ?? '');
+
+      return null;
+    }, [debouncedSearchText]);
 
     return Scaffold(
       appBar: BaseAppBar(
@@ -43,14 +59,15 @@ class HomeScreen extends ConsumerWidget {
               top: 5.0,
               bottom: 20.0,
             ),
-            child: Form(
-              child: CustomTextFormField(
-                hintText: "Search",
-                suffixIcon: Icon(
-                  Icons.search,
-                  color: palette.accent.withValues(alpha: 0.5),
-                ),
+            child: CustomTextFormField(
+              hintText: "Search",
+              suffixIcon: Icon(
+                Icons.search,
+                color: palette.accent.withValues(alpha: 0.5),
               ),
+              onChanged: (value) {
+                searchInput.value = value;
+              },
             ),
           ),
         ),
