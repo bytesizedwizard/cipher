@@ -25,7 +25,7 @@ class CircularTimer extends HookConsumerWidget {
       value: value.clamp(0.0, 1.0),
       backgroundColor: palette.border,
       color: palette.accent,
-      strokeWidth: 8,
+      strokeWidth: 3,
       trackGap: 0,
       padding: const EdgeInsets.all(0),
       strokeCap: StrokeCap.butt,

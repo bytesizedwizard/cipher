@@ -128,7 +128,8 @@ class _AddEntityScreenState extends ConsumerState<AddEntityScreen> {
                       ref
                           .read(authControllerProvider.notifier)
                           .addAccountFromUri(keyUri);
-                      context.pop();
+
+                      if (context.canPop()) context.pop();
                     } else {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
@@ -169,6 +170,7 @@ class _AddEntityScreenState extends ConsumerState<AddEntityScreen> {
                       onSaved: (value) {
                         accountDetails.value['secret'] = value ?? '';
                       },
+                      obscureText: true,
                     ),
                     const Gap(15),
                     SemanticElevatedButton(
