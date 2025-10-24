@@ -49,5 +49,7 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>NSFaceIDUsageDescription</key>
+	<string>This app needs Face ID access to provide secure access to sensitive features.</string>
 </dict>
 </plist>
