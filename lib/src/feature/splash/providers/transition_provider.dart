@@ -16,4 +16,12 @@ class TransitionNotifier extends _$TransitionNotifier {
   void complete() {
     state = SplashState.transition();
   }
+
+  void error(String message) {
+    state = SplashState.error(message);
+  }
+
+  void authRequired() {
+    state = SplashState.authRequired();
+  }
 }

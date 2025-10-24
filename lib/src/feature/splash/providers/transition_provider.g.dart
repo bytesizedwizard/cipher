@@ -7,7 +7,7 @@ part of 'transition_provider.dart';
 // **************************************************************************
 
 String _$transitionNotifierHash() =>
-    r'e64369dc007935dfa68362ea5cffcabadc3b510b';
+    r'208e451fa002a2c8d9ed7fe6970c5ef4f11a88a8';
 
 /// See also [TransitionNotifier].
 @ProviderFor(TransitionNotifier)

@@ -10,4 +10,5 @@ abstract class SplashState with _$SplashState {
   const factory SplashState.loading() = _Loading;
   const factory SplashState.transition() = _Transition;
   const factory SplashState.error(String message) = _Error;
+  const factory SplashState.authRequired() = _AuthRequired;
 }
