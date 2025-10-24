@@ -1,3 +1,4 @@
+import 'package:cipher/src/feature/settings/models/settings_models.dart';
 import 'package:cipher/src/feature/settings/providers/settings_provider.dart';
 import 'package:cipher/src/feature/settings/utils/constants.dart';
 import 'package:cipher/src/providers/colors.dart';
@@ -112,51 +113,51 @@ class SettingsScreen extends ConsumerWidget {
                 textStyles: textStyles,
                 palette: palette,
               ),
-              const Gap(20),
-              ..._buildSettingsSection(
-                title: "Backup & Recovery",
-                children: [
-                  _buildSettingsTile(
-                    leading: Icons.file_download,
-                    title: const Text("Import Data"),
-                    onTap: () {
-                      context.push(
-                        "/settings/update",
-                        extra: SettingsOption.importData,
-                      );
-                    },
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.only(
-                        topLeft: Radius.circular(8.0),
-                        topRight: Radius.circular(8.0),
-                      ),
-                    ),
-                    palette: palette,
-                    textStyles: textStyles,
-                  ),
-                  const Divider(height: 0),
-                  _buildSettingsTile(
-                    leading: Icons.import_export,
-                    title: const Text("Export Data"),
-                    onTap: () {
-                      context.push(
-                        "/settings/update",
-                        extra: SettingsOption.exportData,
-                      );
-                    },
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.only(
-                        bottomLeft: Radius.circular(8.0),
-                        bottomRight: Radius.circular(8.0),
-                      ),
-                    ),
-                    palette: palette,
-                    textStyles: textStyles,
-                  ),
-                ],
-                textStyles: textStyles,
-                palette: palette,
-              ),
+              // const Gap(20),
+              // ..._buildSettingsSection(
+              //   title: "Backup & Recovery",
+              //   children: [
+              //     _buildSettingsTile(
+              //       leading: Icons.file_download,
+              //       title: const Text("Import Data"),
+              //       onTap: () {
+              //         context.push(
+              //           "/settings/update",
+              //           extra: SettingsOption.importData,
+              //         );
+              //       },
+              //       shape: RoundedRectangleBorder(
+              //         borderRadius: BorderRadius.only(
+              //           topLeft: Radius.circular(8.0),
+              //           topRight: Radius.circular(8.0),
+              //         ),
+              //       ),
+              //       palette: palette,
+              //       textStyles: textStyles,
+              //     ),
+              //     const Divider(height: 0),
+              //     _buildSettingsTile(
+              //       leading: Icons.import_export,
+              //       title: const Text("Export Data"),
+              //       onTap: () {
+              //         context.push(
+              //           "/settings/update",
+              //           extra: SettingsOption.exportData,
+              //         );
+              //       },
+              //       shape: RoundedRectangleBorder(
+              //         borderRadius: BorderRadius.only(
+              //           bottomLeft: Radius.circular(8.0),
+              //           bottomRight: Radius.circular(8.0),
+              //         ),
+              //       ),
+              //       palette: palette,
+              //       textStyles: textStyles,
+              //     ),
+              //   ],
+              //   textStyles: textStyles,
+              //   palette: palette,
+              // ),
               const Gap(60),
               ..._buildAboutSection(
                 context,
@@ -202,6 +203,7 @@ class SettingsScreen extends ConsumerWidget {
     required Style textStyles,
     required ColorPalette palette,
     ShapeBorder? shape,
+    bool isExperimental = false,
   }) {
     return ListTile(
       leadingAndTrailingTextStyle: textStyles.heading3.copyWith(fontSize: 21),
@@ -215,7 +217,34 @@ class SettingsScreen extends ConsumerWidget {
           shape ??
           RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
       onTap: onTap,
-      trailing: const Icon(Icons.chevron_right, size: 21),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (isExperimental)
+            Padding(
+              padding: const EdgeInsets.only(right: 8.0),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 6.0,
+                  vertical: 2.0,
+                ),
+                decoration: BoxDecoration(
+                  color: palette.accent.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(4.0),
+                ),
+                child: Text(
+                  "EXPERIMENTAL",
+                  style: textStyles.label.copyWith(
+                    color: palette.accent,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+          const Icon(Icons.chevron_right, size: 21),
+        ],
+      ),
     );
   }
 
@@ -335,19 +364,27 @@ class UpdateSettingScreen extends ConsumerWidget {
             builder: (context, ref, _) {
               final settings = ref.watch(settingsControllerProvider);
 
-              return SemanticRadioButtonGroup(
-                options: <RadioButtonOption>[
-                  RadioButtonOption(value: ThemeMode.light, label: "Light"),
-                  RadioButtonOption(value: ThemeMode.dark, label: "Dark"),
-                  RadioButtonOption(value: ThemeMode.system, label: "System"),
-                ],
-                groupValue: settings.themeMode,
-                onChanged: (value) {
-                  if (value != null) {
-                    ref
-                        .read(settingsControllerProvider.notifier)
-                        .updateThemeMode(value);
-                  }
+              return settings.maybeWhen(
+                orElse: () => LinearProgressIndicator(),
+                loaded: (settings) {
+                  return SemanticRadioButtonGroup(
+                    options: <RadioButtonOption>[
+                      RadioButtonOption(value: ThemeMode.light, label: "Light"),
+                      RadioButtonOption(value: ThemeMode.dark, label: "Dark"),
+                      RadioButtonOption(
+                        value: ThemeMode.system,
+                        label: "System",
+                      ),
+                    ],
+                    groupValue: settings.themeMode,
+                    onChanged: (value) {
+                      if (value != null) {
+                        ref
+                            .read(settingsControllerProvider.notifier)
+                            .updateThemeMode(value);
+                      }
+                    },
+                  );
                 },
               );
             },
@@ -366,67 +403,75 @@ class UpdateSettingScreen extends ConsumerWidget {
           Consumer(
             builder: (context, ref, _) {
               final settings = ref.watch(settingsControllerProvider);
+              final settingsNotifier = ref.read(
+                settingsControllerProvider.notifier,
+              );
 
-              return SemanticToggleButton(
-                label: settings.biometricAuthEnabled ? "Enabled" : "Disabled",
-                value: settings.biometricAuthEnabled,
-                onChanged: (value) {
-                  if (value) {
-                    ref.read(settingsControllerProvider.notifier).authenticate().then((
-                      status,
-                    ) {
-                      if (status == BiometricAuthStatus.success) {
+              return settings.maybeWhen(
+                orElse: () => LinearProgressIndicator(),
+                loaded: (settings) {
+                  return SemanticToggleButton(
+                    label: settings.biometricAuthEnabled
+                        ? "Enabled"
+                        : "Disabled",
+                    value: settings.biometricAuthEnabled,
+                    onChanged: (value) {
+                      if (value) {
+                        settingsNotifier.authenticate(bypassIfDisabled: true).then((
+                          status,
+                        ) {
+                          if (status == BiometricAuthStatus.success) {
+                            settingsNotifier.updateBiometricAuthEnabled(true);
+                          } else {
+                            String message;
+
+                            switch (status) {
+                              case BiometricAuthStatus.disabled:
+                                message =
+                                    "Biometric authentication is disabled in device settings.";
+                                break;
+                              case BiometricAuthStatus.unknown:
+                                message =
+                                    "Biometric authentication failed due to an unknown error.";
+                                break;
+                              case BiometricAuthStatus.noBiometricHardware:
+                                message =
+                                    "No biometric hardware found on this device.";
+                                break;
+                              case BiometricAuthStatus.failure:
+                                message = "Biometric authentication failed.";
+                                break;
+                              case BiometricAuthStatus.lockout:
+                                message =
+                                    "Biometric authentication is temporarily locked out. Please try again later.";
+                                break;
+                              case BiometricAuthStatus.success:
+                                ref
+                                    .read(settingsControllerProvider.notifier)
+                                    .updateBiometricAuthEnabled(value);
+                                message = "Biometric authentication succeeded.";
+                                break;
+                            }
+
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(message),
+                                  behavior: SnackBarBehavior.floating,
+                                ),
+                              );
+                            }
+                          }
+                        });
+
+                        return;
+                      } else {
                         ref
                             .read(settingsControllerProvider.notifier)
-                            .updateBiometricAuthEnabled(true);
-                      } else {
-                        String message;
-
-                        switch (status) {
-                          case BiometricAuthStatus.disabled:
-                            message =
-                                "Biometric authentication is disabled in device settings.";
-                            break;
-                          case BiometricAuthStatus.unknown:
-                            message =
-                                "Biometric authentication failed due to an unknown error.";
-                            break;
-                          case BiometricAuthStatus.noBiometricHardware:
-                            message =
-                                "No biometric hardware found on this device.";
-                            break;
-                          case BiometricAuthStatus.failure:
-                            message = "Biometric authentication failed.";
-                            break;
-                          case BiometricAuthStatus.lockout:
-                            message =
-                                "Biometric authentication is temporarily locked out. Please try again later.";
-                            break;
-                          case BiometricAuthStatus.success:
-                            ref
-                                .read(settingsControllerProvider.notifier)
-                                .updateBiometricAuthEnabled(value);
-                            message = "Biometric authentication succeeded.";
-                            break;
-                        }
-
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(message),
-                              behavior: SnackBarBehavior.floating,
-                            ),
-                          );
-                        }
+                            .updateBiometricAuthEnabled(value);
                       }
-                    });
-
-                    return;
-                  } else {
-                    ref
-                        .read(settingsControllerProvider.notifier)
-                        .updateBiometricAuthEnabled(value);
-                  }
+                    },
+                  );
                 },
               );
             },
@@ -444,32 +489,41 @@ class UpdateSettingScreen extends ConsumerWidget {
           const Gap(12),
           Consumer(
             builder: (context, ref, _) {
-              return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 25.0),
-                child: CustomTextFormField(
-                  hintText: "Timeout in seconds",
-                  textInputType: TextInputType.number,
-                  initialValue: Duration(
-                    milliseconds: ref
-                        .watch(settingsControllerProvider)
-                        .clipboardTimeout,
-                  ).inSeconds.toString(),
-                  onChanged: (value) {
-                    final intValue = int.tryParse(value) ?? 0;
+              final settingsProvider = ref.watch(settingsControllerProvider);
 
-                    if (intValue > 0) {
-                      ref
-                          .read(settingsControllerProvider.notifier)
-                          .updateClipboardTimeout(
-                            Duration(seconds: intValue).inMilliseconds,
-                          );
-                    }
-                  },
-                  prefixIcon: Padding(
-                    padding: const EdgeInsets.only(left: 12.0, right: 8.0),
-                    child: Icon(Icons.timer, size: 21, color: palette.accent),
-                  ),
-                ),
+              return settingsProvider.maybeWhen(
+                orElse: () => LinearProgressIndicator(),
+                loaded: (settings) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 25.0),
+                    child: CustomTextFormField(
+                      hintText: "Timeout in seconds",
+                      textInputType: TextInputType.number,
+                      initialValue: Duration(
+                        milliseconds: settings.clipboardTimeout,
+                      ).inSeconds.toString(),
+                      onChanged: (value) {
+                        final intValue = int.tryParse(value) ?? 0;
+
+                        if (intValue > 0) {
+                          ref
+                              .read(settingsControllerProvider.notifier)
+                              .updateClipboardTimeout(
+                                Duration(seconds: intValue).inMilliseconds,
+                              );
+                        }
+                      },
+                      prefixIcon: Padding(
+                        padding: const EdgeInsets.only(left: 12.0, right: 8.0),
+                        child: Icon(
+                          Icons.timer,
+                          size: 21,
+                          color: palette.accent,
+                        ),
+                      ),
+                    ),
+                  );
+                },
               );
             },
           ),

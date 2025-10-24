@@ -6,6 +6,8 @@ import 'package:cipher/src/feature/settings/utils/constants.dart';
 import 'package:flutter/material.dart' show ThemeMode;
 import 'package:flutter/widgets.dart' show WidgetsBinding, Brightness;
 import 'package:local_auth/local_auth.dart';
+import 'package:local_auth_android/local_auth_android.dart';
+import 'package:local_auth_darwin/local_auth_darwin.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'settings_provider.g.dart';
@@ -21,20 +23,11 @@ enum BiometricAuthStatus {
 
 @Riverpod(keepAlive: true)
 class SettingsController extends _$SettingsController {
-  final Settings defaultSettings = const Settings(
-    themeMode: ThemeMode.system,
-    clipboardTimeout: SettingsConstants.defaultClipboardTimeout,
-    biometricAuthEnabled: SettingsConstants.defaultBiometricAuthEnabled,
-  );
-
   StorageService get _storageService => ref.read(storageServiceProvider);
 
   @override
-  Settings build() {
-    // Load initial settings from persistent storage or set defaults
-    loadSettings();
-
-    return defaultSettings;
+  SettingsState build() {
+    return const SettingsState.initial();
   }
 
   Future<void> loadSettings() async {
@@ -46,36 +39,60 @@ class SettingsController extends _$SettingsController {
         jsonDecode(settingsEncoded ?? '{}') as Map<String, dynamic>;
 
     if (settingsDecoded.isNotEmpty) {
-      state = Settings.fromJson(settingsDecoded);
+      state = SettingsState.loaded(Settings.fromJson(settingsDecoded));
     }
   }
 
   Future<void> updateThemeMode(ThemeMode mode) async {
-    state = state.copyWith(themeMode: mode);
-    saveSettings();
+    state.whenOrNull(
+      loaded: (settings) {
+        final updated = settings.copyWith(themeMode: mode);
+        state = SettingsState.loaded(updated);
+        saveSettings(updated);
+      },
+    );
   }
 
   Future<void> updateClipboardTimeout(int timeout) async {
-    state = state.copyWith(clipboardTimeout: timeout);
-    saveSettings();
+    state.whenOrNull(
+      loaded: (settings) {
+        final updated = settings.copyWith(clipboardTimeout: timeout);
+        state = SettingsState.loaded(updated);
+        saveSettings(updated);
+      },
+    );
   }
 
   Future<void> updateBiometricAuthEnabled(bool isEnabled) async {
-    state = state.copyWith(biometricAuthEnabled: isEnabled);
-    saveSettings();
+    state.whenOrNull(
+      loaded: (settings) {
+        final updated = settings.copyWith(biometricAuthEnabled: isEnabled);
+        state = SettingsState.loaded(updated);
+        saveSettings(updated);
+      },
+    );
   }
 
-  Future<BiometricAuthStatus> authenticate() async {
+  Future<BiometricAuthStatus> authenticate({
+    bool bypassIfDisabled = false,
+  }) async {
     try {
-      if (!state.biometricAuthEnabled) {
-        return BiometricAuthStatus.disabled;
-      }
-
       LocalAuthentication localAuth = LocalAuthentication();
       bool isAuthenticated = await localAuth.authenticate(
         localizedReason: 'Please authenticate via biometrics to proceed',
         persistAcrossBackgrounding: true,
         sensitiveTransaction: true,
+        authMessages: [
+          AndroidAuthMessages(
+            signInTitle: 'Authentication Required',
+            signInHint: 'Please authenticate to proceed',
+            cancelButton: 'Cancel',
+          ),
+          IOSAuthMessages(
+            localizedFallbackTitle: 'Please authenticate to proceed',
+            cancelButton: 'Cancel',
+          ),
+        ],
       );
 
       return isAuthenticated
@@ -93,8 +110,8 @@ class SettingsController extends _$SettingsController {
     }
   }
 
-  Future<void> saveSettings() async {
-    final settingsJson = state.toJson();
+  Future<Settings?> saveSettings(Settings settings) async {
+    final settingsJson = settings.toJson();
     final settingsEncoded = jsonEncode(settingsJson);
 
     await _storageService.write(
@@ -102,6 +119,8 @@ class SettingsController extends _$SettingsController {
       settingsEncoded,
       StorageSource.sharedPreferences,
     );
+
+    return null;
   }
 }
 
