@@ -1,6 +1,6 @@
-import 'package:cipher/src/feature/auth/models/auth_models.dart';
-import 'package:cipher/src/feature/auth/providers/auth_providers.dart';
-import 'package:cipher/src/feature/auth/utils/constants.dart';
+import 'package:cipher/src/feature/account/models/auth_models.dart';
+import 'package:cipher/src/feature/account/providers/auth_providers.dart';
+import 'package:cipher/src/feature/account/utils/constants.dart';
 import 'package:cipher/src/providers/colors.dart';
 import 'package:cipher/src/providers/styles.dart';
 import 'package:cipher/src/ui/widgets/app_bar.dart';
@@ -56,23 +56,16 @@ class _AddEntityScreenState extends ConsumerState<AddEntityScreen> {
 
     return Scaffold(
       appBar: BaseAppBar(
-        title: Text("Add Source"),
+        title: Text("Add Account"),
         elevation: 0,
         titleSpacing: 4,
       ),
       body: SafeArea(
-        minimum: const EdgeInsets.symmetric(horizontal: 25, vertical: 25),
+        minimum: const EdgeInsets.symmetric(horizontal: 25, vertical: 10),
         child: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text("Scan Code", style: textStyles.heading2),
-              const Gap(5),
-              Text(
-                "Use your device camera to scan a code, or enter the details manually below.",
-                style: textStyles.body,
-              ),
-              const Gap(20),
               Container(
                 decoration: BoxDecoration(
                   color: palette.accent,
@@ -148,16 +141,24 @@ class _AddEntityScreenState extends ConsumerState<AddEntityScreen> {
               ),
               const Gap(25),
               Text(
-                "Can't scan code? Try entering it manually below.",
+                "Can't scan code? Try entering the details manually below.",
                 style: textStyles.heading3,
               ),
-              const Gap(10),
+              const Gap(20),
               Form(
                 key: formKey,
                 child: Column(
                   children: [
                     CustomTextFormField(
-                      hintText: "Account Name",
+                      hintText: "Issuer (e.g. Google, Facebook)",
+                      prefixIcon: Icon(Symbols.business, color: palette.accent),
+                      onSaved: (value) {
+                        accountDetails.value['issuer'] = value ?? '';
+                      },
+                    ),
+                    const Gap(15),
+                    CustomTextFormField(
+                      hintText: "Username or Email",
                       prefixIcon: Icon(Symbols.person, color: palette.accent),
                       onSaved: (value) {
                         accountDetails.value['name'] = value ?? '';
@@ -181,9 +182,9 @@ class _AddEntityScreenState extends ConsumerState<AddEntityScreen> {
 
                           final secret = accountDetails.value['secret'] ?? '';
                           String label = accountDetails.value['name'] ?? '';
-                          String issuer = '';
+                          String issuer = accountDetails.value['issuer'] ?? '';
 
-                          if (label.contains(":")) {
+                          if (label.contains(":") && issuer.isEmpty) {
                             issuer = label.split(":").first;
                             label = label.split(":").last;
                           }
@@ -194,7 +195,7 @@ class _AddEntityScreenState extends ConsumerState<AddEntityScreen> {
                             algorithm: AuthConstants.algorithmSHA1,
                             digits: 6,
                             period: 30,
-                            type: 'totp',
+                            type: AuthConstants.totp,
                           );
 
                           ref

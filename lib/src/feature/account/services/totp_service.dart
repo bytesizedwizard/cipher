@@ -2,10 +2,10 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:base32/base32.dart';
-import 'package:cipher/src/feature/auth/models/auth_errors.dart';
-import 'package:cipher/src/feature/auth/models/auth_models.dart';
-import 'package:cipher/src/feature/auth/services/storage_service.dart';
-import 'package:cipher/src/feature/auth/utils/constants.dart';
+import 'package:cipher/src/feature/account/models/auth_models.dart';
+import 'package:cipher/src/feature/account/models/errors.dart';
+import 'package:cipher/src/feature/account/services/storage_service.dart';
+import 'package:cipher/src/feature/account/utils/constants.dart';
 import 'package:crypto/crypto.dart' as crypto;
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -70,7 +70,7 @@ class TotpService {
   Future<String> refresh(Account account) async {
     String? encodedSecret = await _storageService.read(
       '${account.issuer}:${account.label}_secret',
-      SecureStorageSource.secureStorage,
+      StorageSource.secureStorage,
     );
 
     final String secret = utf8.decode(base64Decode(encodedSecret ?? ''));
@@ -168,12 +168,12 @@ class TotpService {
   Future<void> delete(Account account) async {
     await _storageService.delete(
       account.label,
-      SecureStorageSource.sharedPreferences,
+      StorageSource.sharedPreferences,
     );
 
     await _storageService.delete(
       '${account.label}_secret',
-      SecureStorageSource.secureStorage,
+      StorageSource.secureStorage,
     );
   }
 

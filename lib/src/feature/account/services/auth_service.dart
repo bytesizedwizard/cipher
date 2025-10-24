@@ -1,7 +1,8 @@
 import 'dart:convert';
 
-import 'package:cipher/src/feature/auth/models/auth_models.dart';
-import 'package:cipher/src/feature/auth/services/storage_service.dart';
+import 'package:cipher/src/feature/account/models/auth_models.dart';
+import 'package:cipher/src/feature/account/services/storage_service.dart';
+import 'package:cipher/src/feature/settings/utils/constants.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -17,14 +18,15 @@ class AuthService {
   /// Returns an empty list if no accounts are found.
   Future<List<Account>> getAccounts(String query) async {
     final Map<String, Object?> all = await _storageService.readAll(
-      source: SecureStorageSource.sharedPreferences,
+      source: StorageSource.sharedPreferences,
     );
 
     List<Account> accounts = [];
 
-    for (var value in all.values) {
+    for (var entry in all.entries) {
       try {
-        if (value == null) {
+        final value = entry.value;
+        if (value == null || entry.key == SettingsConstants.storageKey) {
           continue;
         }
 
@@ -61,17 +63,13 @@ class AuthService {
     final String value = json.encode(account.toJson());
 
     // Store account metadata in shared preferences
-    await _storageService.write(
-      key,
-      value,
-      SecureStorageSource.sharedPreferences,
-    );
+    await _storageService.write(key, value, StorageSource.sharedPreferences);
 
     // Store secret securely in secure storage
     await _storageService.write(
       "${key}_secret",
       base64Encode(utf8.encode(secret)),
-      SecureStorageSource.secureStorage,
+      StorageSource.secureStorage,
     );
   }
 }

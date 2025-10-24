@@ -1,9 +1,9 @@
 // auth_controller.dart
 import 'dart:async';
 
-import 'package:cipher/src/feature/auth/models/auth_models.dart';
-import 'package:cipher/src/feature/auth/services/auth_service.dart';
-import 'package:cipher/src/feature/auth/services/totp_service.dart';
+import 'package:cipher/src/feature/account/models/auth_models.dart';
+import 'package:cipher/src/feature/account/services/auth_service.dart';
+import 'package:cipher/src/feature/account/services/totp_service.dart';
 import 'package:flutter/widgets.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
