@@ -1,0 +1,12 @@
+import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
+
+part 'platform.g.dart';
+
+@riverpod
+Future<PackageInfo> platformInfo(Ref ref) async {
+  PackageInfo packageInfo = await PackageInfo.fromPlatform();
+
+  return packageInfo;
+}

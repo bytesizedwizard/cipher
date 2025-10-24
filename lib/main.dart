@@ -1,5 +1,5 @@
+import 'package:cipher/src/feature/settings/providers/settings_provider.dart';
 import 'package:cipher/src/providers/colors.dart';
-import 'package:cipher/src/providers/theme.dart';
 import 'package:cipher/src/routes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -25,7 +25,9 @@ class CipherApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final palette = ref.watch(colorPaletteProvider);
-    final themeMode = ref.watch(themeNotifierProvider);
+    final settings = ref.watch(settingsControllerProvider);
+
+    final themeMode = settings.themeMode;
 
     return MaterialApp.router(
       theme: ThemeData(
@@ -59,6 +61,37 @@ class CipherApp extends ConsumerWidget {
         floatingActionButtonTheme: FloatingActionButtonThemeData(
           backgroundColor: palette.accent,
           foregroundColor: palette.primary,
+        ),
+        radioTheme: RadioThemeData(
+          fillColor: WidgetStateProperty.all(palette.accent),
+        ),
+        toggleButtonsTheme: ToggleButtonsThemeData(
+          color: palette.font,
+          selectedColor: palette.primary,
+          fillColor: palette.accent,
+          borderColor: palette.border,
+          selectedBorderColor: palette.accent,
+          borderRadius: BorderRadius.circular(8.0),
+        ),
+        switchTheme: SwitchThemeData(
+          thumbColor: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.selected)) {
+              return palette.accent;
+            }
+            return palette.border;
+          }),
+          trackColor: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.selected)) {
+              return palette.success;
+            }
+            return palette.border.withValues(alpha: 0.5);
+          }),
+        ),
+        snackBarTheme: SnackBarThemeData(
+          backgroundColor: palette.accent,
+          contentTextStyle: TextStyle(color: palette.primary),
+          actionTextColor: palette.primary,
+          behavior: SnackBarBehavior.floating,
         ),
       ),
       themeMode: themeMode,

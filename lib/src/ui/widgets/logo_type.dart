@@ -1,4 +1,4 @@
-import 'package:cipher/src/providers/theme.dart';
+import 'package:cipher/src/feature/settings/providers/settings_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
@@ -21,7 +21,8 @@ class Logo extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final themeMode = ref.watch(themeNotifierProvider);
+    final settings = ref.watch(settingsControllerProvider);
+    final themeMode = settings.themeMode;
 
     if (!full) {
       return Image.asset(

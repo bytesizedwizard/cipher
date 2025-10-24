@@ -1,4 +1,4 @@
-import 'package:cipher/src/providers/theme.dart';
+import 'package:cipher/src/feature/settings/providers/settings_provider.dart';
 import 'package:flutter/material.dart'
     show Color, WidgetsBinding, Brightness, ThemeMode;
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -64,7 +64,9 @@ class DarkPalette implements ColorPalette {
 
 @Riverpod(keepAlive: true)
 ColorPalette colorPalette(Ref ref) {
-  final themeMode = ref.watch(themeNotifierProvider);
+  final settings = ref.watch(settingsControllerProvider);
+  final themeMode = settings.themeMode;
+
   final dark = DarkPalette();
   final light = LightPalette();
 
