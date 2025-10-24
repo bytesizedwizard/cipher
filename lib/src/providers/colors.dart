@@ -1,3 +1,4 @@
+import 'package:cipher/src/feature/settings/models/settings_models.dart';
 import 'package:cipher/src/feature/settings/providers/settings_provider.dart';
 import 'package:flutter/material.dart'
     show Color, WidgetsBinding, Brightness, ThemeMode;
@@ -41,7 +42,7 @@ class LightPalette implements ColorPalette {
 
 class DarkPalette implements ColorPalette {
   @override
-  Color get primary => const Color.fromARGB(255, 0, 25, 16);
+  Color get primary => const Color.fromARGB(255, 0, 8, 5);
 
   @override
   Color get accent => const Color.fromARGB(255, 243, 255, 251);
@@ -64,8 +65,10 @@ class DarkPalette implements ColorPalette {
 
 @Riverpod(keepAlive: true)
 ColorPalette colorPalette(Ref ref) {
-  final settings = ref.watch(settingsControllerProvider);
-  final themeMode = settings.themeMode;
+  final settings = ref
+      .watch(settingsControllerProvider)
+      .maybeWhen(loaded: (settings) => settings, orElse: () => null);
+  final themeMode = settings?.themeMode;
 
   final dark = DarkPalette();
   final light = LightPalette();
@@ -78,5 +81,6 @@ ColorPalette colorPalette(Ref ref) {
               Brightness.dark
           ? dark
           : light,
+    null => light,
   };
 }

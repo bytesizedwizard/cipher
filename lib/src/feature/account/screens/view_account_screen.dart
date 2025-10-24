@@ -31,12 +31,14 @@ class ViewAccountScreen extends ConsumerWidget {
         titleSpacing: 0,
       ),
       body: SafeArea(
-        minimum: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        minimum: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
         child: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               SemanticCard(
+                padding: const EdgeInsets.all(0),
+                border: BorderSide.none,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [

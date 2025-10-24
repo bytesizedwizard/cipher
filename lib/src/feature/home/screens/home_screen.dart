@@ -1,11 +1,11 @@
 import 'package:cipher/src/feature/account/providers/auth_providers.dart';
 import 'package:cipher/src/feature/account/utils/constants.dart';
+import 'package:cipher/src/feature/settings/models/settings_models.dart';
 import 'package:cipher/src/feature/settings/providers/settings_provider.dart';
 import 'package:cipher/src/providers/colors.dart';
 import 'package:cipher/src/providers/styles.dart';
 import 'package:cipher/src/ui/widgets/app_bar.dart';
 import 'package:cipher/src/ui/widgets/bottom_bars.dart';
-import 'package:cipher/src/ui/widgets/buttons.dart';
 import 'package:cipher/src/ui/widgets/logo_type.dart';
 import 'package:cipher/src/ui/widgets/text_field.dart';
 import 'package:cipher/src/ui/widgets/timer.dart';
@@ -14,7 +14,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:material_symbols_icons/symbols.dart';
 
 class HomeScreen extends HookConsumerWidget {
   const HomeScreen({super.key});
@@ -47,9 +46,6 @@ class HomeScreen extends HookConsumerWidget {
         titleSpacing: 25,
         title: const Logo(full: true, fit: BoxFit.contain, height: 20),
         elevation: 0,
-        actions: [
-          FlatIconButton(icon: Icon(Symbols.more_vert), onPressed: () {}),
-        ],
         bottom: PreferredSize(
           preferredSize: Size.fromHeight(50),
           child: Padding(
@@ -126,10 +122,6 @@ class HomeScreen extends HookConsumerWidget {
   ) {
     return Consumer(
       builder: (context, ref, _) {
-        final clipboardTimeout = ref
-            .watch(settingsControllerProvider)
-            .clipboardTimeout;
-
         return ListView(
           children: [
             for (final item in items) ...[
@@ -143,9 +135,20 @@ class HomeScreen extends HookConsumerWidget {
                   Clipboard.setData(ClipboardData(text: item.otp));
                   HapticFeedback.mediumImpact();
 
-                  Future.delayed(Duration(milliseconds: clipboardTimeout), () {
-                    Clipboard.setData(const ClipboardData(text: ''));
-                  });
+                  final settingsNotifier = ref.read(settingsControllerProvider);
+
+                  settingsNotifier.whenOrNull(
+                    loaded: (settings) {
+                      if (settings.clipboardTimeout > 0) {
+                        Future.delayed(
+                          Duration(milliseconds: settings.clipboardTimeout),
+                          () {
+                            Clipboard.setData(const ClipboardData(text: ''));
+                          },
+                        );
+                      }
+                    },
+                  );
 
                   ScaffoldMessenger.of(
                     context,
