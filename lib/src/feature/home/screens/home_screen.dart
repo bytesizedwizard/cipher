@@ -1,5 +1,6 @@
-import 'package:cipher/src/feature/auth/providers/auth_providers.dart';
-import 'package:cipher/src/feature/auth/utils/constants.dart';
+import 'package:cipher/src/feature/account/providers/auth_providers.dart';
+import 'package:cipher/src/feature/account/utils/constants.dart';
+import 'package:cipher/src/feature/settings/providers/settings_provider.dart';
 import 'package:cipher/src/providers/colors.dart';
 import 'package:cipher/src/providers/styles.dart';
 import 'package:cipher/src/ui/widgets/app_bar.dart';
@@ -12,7 +13,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
@@ -45,7 +45,7 @@ class HomeScreen extends HookConsumerWidget {
       appBar: BaseAppBar(
         toolbarHeight: 125,
         titleSpacing: 25,
-        title: Logo(height: 25, full: true),
+        title: const Logo(full: true, fit: BoxFit.contain, height: 20),
         elevation: 0,
         actions: [
           FlatIconButton(icon: Icon(Symbols.more_vert), onPressed: () {}),
@@ -124,53 +124,68 @@ class HomeScreen extends HookConsumerWidget {
     Style textStyle,
     ColorPalette palette,
   ) {
-    return ListView(
-      children: [
-        for (final item in items) ...[
-          ListTile(
-            title: Text(item.account.issuer),
-            titleTextStyle: textStyle.heading3,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 20),
-            isThreeLine: false,
-            onTap: () {
-              // copy to clipboard
-              Clipboard.setData(ClipboardData(text: item.otp));
-              ScaffoldMessenger.of(
-                context,
-              ).showSnackBar(const SnackBar(content: Text('Copied')));
-            },
-            subtitle: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  item.otp,
-                  style: textStyle.heading1.copyWith(
-                    fontSize: 28,
-                    height: 1.5,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: GoogleFonts.inter().fontFamily,
-                  ),
-                ),
-                const SizedBox(width: 5),
-                if (item.account.label.isNotEmpty)
-                  Text(
-                    item.account.label,
-                    style: textStyle.body.copyWith(
-                      color: palette.accent.withValues(alpha: 0.5),
+    return Consumer(
+      builder: (context, ref, _) {
+        final clipboardTimeout = ref
+            .watch(settingsControllerProvider)
+            .clipboardTimeout;
+
+        return ListView(
+          children: [
+            for (final item in items) ...[
+              ListTile(
+                title: Text(item.account.issuer),
+                titleTextStyle: textStyle.heading3,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 20),
+                isThreeLine: false,
+                onTap: () {
+                  // copy to clipboard
+                  Clipboard.setData(ClipboardData(text: item.otp));
+                  HapticFeedback.mediumImpact();
+
+                  Future.delayed(Duration(milliseconds: clipboardTimeout), () {
+                    Clipboard.setData(const ClipboardData(text: ''));
+                  });
+
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(const SnackBar(content: Text('Copied')));
+                },
+                onLongPress: () {
+                  context.push("/auth/view", extra: item.account.id);
+                },
+                subtitle: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      item.otp,
+                      style: textStyle.heading1.copyWith(
+                        fontSize: 32,
+                        height: 1.5,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                  ),
-              ],
-            ),
-            style: ListTileStyle.list,
-            horizontalTitleGap: 10,
-            trailing: CircularTimer(
-              secondsLeft: item.secondsLeft,
-              totalSeconds: AuthConstants.defaultPeriod,
-            ),
-          ),
-          Divider(),
-        ],
-      ],
+                    if (item.account.label.isNotEmpty)
+                      Text(
+                        item.account.label,
+                        style: textStyle.body.copyWith(
+                          color: palette.accent.withValues(alpha: 0.5),
+                        ),
+                      ),
+                  ],
+                ),
+                style: ListTileStyle.list,
+                horizontalTitleGap: 10,
+                trailing: CircularTimer(
+                  secondsLeft: item.secondsLeft,
+                  totalSeconds: AuthConstants.defaultPeriod,
+                ),
+              ),
+              Divider(),
+            ],
+          ],
+        );
+      },
     );
   }
 }
