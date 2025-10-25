@@ -23,6 +23,11 @@ enum BiometricAuthStatus {
 
 @Riverpod(keepAlive: true)
 class SettingsController extends _$SettingsController {
+  final _defaultSettings = Settings(
+    themeMode: ThemeMode.system,
+    clipboardTimeout: 30,
+    biometricAuthEnabled: false,
+  );
   StorageService get _storageService => ref.read(storageServiceProvider);
 
   @override
@@ -40,6 +45,8 @@ class SettingsController extends _$SettingsController {
 
     if (settingsDecoded.isNotEmpty) {
       state = SettingsState.loaded(Settings.fromJson(settingsDecoded));
+    } else {
+      state = SettingsState.loaded(_defaultSettings);
     }
   }
 
