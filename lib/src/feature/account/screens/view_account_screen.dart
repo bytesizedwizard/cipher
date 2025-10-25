@@ -1,5 +1,6 @@
 import 'package:cipher/src/feature/account/providers/auth_providers.dart';
 import 'package:cipher/src/feature/account/utils/constants.dart';
+import 'package:cipher/src/feature/account/widgets/delete_account_dialog.dart';
 import 'package:cipher/src/providers/colors.dart';
 import 'package:cipher/src/providers/styles.dart';
 import 'package:cipher/src/ui/widgets/app_bar.dart';
@@ -92,6 +93,27 @@ class ViewAccountScreen extends ConsumerWidget {
                   ).showSnackBar(const SnackBar(content: Text('Copied')));
                 },
                 semanticLabel: "Copy Passcode",
+              ),
+              const Gap(10),
+              SemanticElevatedButton(
+                icon: const Icon(Symbols.delete),
+                buttonColor: colors.error,
+                elevation: 0,
+                labelColor: colors.primary,
+                iconColor: colors.fromHex('#FFFFFF'),
+                border: BorderSide(color: colors.border, width: 1),
+                label: "Delete Account",
+                onPressed: () {
+                  showDialog(
+                    context: context,
+                    builder: (context) {
+                      final String key =
+                          "${item.account.issuer}:${item.account.label}";
+                      return DeleteAccountDialog(id: key);
+                    },
+                  );
+                },
+                semanticLabel: "Delete Account",
               ),
             ],
           ),
