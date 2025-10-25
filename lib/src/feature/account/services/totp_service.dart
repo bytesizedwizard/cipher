@@ -149,8 +149,8 @@ class TotpService {
       );
     } else {
       final account = Account(
-        label: label,
-        issuer: issuer,
+        label: accountName,
+        issuer: issuer.isEmpty ? label : issuer,
         algorithm: algorithm,
         digits: digits,
         period: period,

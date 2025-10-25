@@ -72,6 +72,17 @@ class AuthService {
       StorageSource.secureStorage,
     );
   }
+
+  /// Deletes an Account and its associated secret from the storage service.
+  /// The account metadata is removed from shared preferences, and the secret
+  /// is removed from secure storage.
+  Future<void> deleteAccount(String id) async {
+    // Remove account metadata from shared preferences
+    await _storageService.delete(id, StorageSource.sharedPreferences);
+
+    // Remove secret from secure storage
+    await _storageService.delete("${id}_secret", StorageSource.secureStorage);
+  }
 }
 
 @Riverpod(keepAlive: true)
