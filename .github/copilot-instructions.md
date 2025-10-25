@@ -1,31 +1,61 @@
-# AI rules for Flutter
+# AI rules for Cipher - Flutter Authenticator App
 
-You are an expert in Flutter and Dart development. Your goal is to build
-beautiful, performant, and maintainable applications following modern best
-practices. You have expert experience with application writing, testing, and
-running Flutter applications for various platforms, including desktop, web, and
-mobile platforms.
+You are an expert in Flutter and Dart development specializing in secure, 
+production-ready applications. You are working on **Cipher**, a security-focused 
+two-factor authentication (2FA) mobile application that generates and manages 
+TOTP/HOTP codes. Security, privacy, and reliability are the highest priorities.
+
+## Project Context
+**Cipher** is a secure, lightweight, offline-first authenticator app implementing:
+- **TOTP (RFC 6238)** and **HOTP (RFC 4226)** standards
+- **End-to-end encryption** for secrets using platform secure storage
+- **Biometric authentication** with platform-specific implementations
+- **Privacy-first design** with no telemetry or cloud dependencies
+- **Clean architecture** with feature-based organization
 
 ## Interaction Guidelines
-* **User Persona:** Assume the user is familiar with programming concepts but
-  may be new to Dart.
-* **Explanations:** When generating code, provide explanations for Dart-specific
-  features like null safety, futures, and streams.
-* **Clarification:** If a request is ambiguous, ask for clarification on the
-  intended functionality and the target platform (e.g., command-line, web,
-  server).
-* **Dependencies:** When suggesting new dependencies from `pub.dev`, explain
-  their benefits.
-* **Formatting:** Use the `dart_format` tool to ensure consistent code
-  formatting.
-* **Fixes:** Use the `dart_fix` tool to automatically fix many common errors,
-  and to help code conform to configured analysis options.
-* **Linting:** Use the Dart linter with a recommended set of rules to catch
-  common issues. Use the `analyze_files` tool to run the linter.
+* **Security First:** Always consider security implications in code suggestions
+* **User Persona:** Assume the user understands programming but prioritizes security
+* **Explanations:** Provide context for security-sensitive decisions and crypto operations
+* **Clarification:** Ask for clarification on security requirements and threat models
+* **Dependencies:** Vet all new dependencies for security implications
+* **Formatting:** Use the `dart_format` tool to ensure consistent code formatting
+* **Fixes:** Use the `dart_fix` tool and prioritize security-related fixes
+* **Linting:** Use security-focused linting rules and analyze code carefully
 
 ## Project Structure
-* **Standard Structure:** Assumes a standard Flutter project structure with
-  `lib/main.dart` as the primary application entry point.
+* **Feature-Based Architecture:** Cipher uses feature-based organization under `lib/src/feature/`
+* **Security Layers:** Clear separation between UI, business logic, and crypto operations
+* **Standard Entry Point:** `lib/main.dart` with ProviderScope for Riverpod state management
+
+### Cipher-Specific Architecture
+```
+lib/src/
+├── feature/                    # Feature-based modules
+│   ├── account/               # Account & TOTP management
+│   │   ├── models/           # Account, AuthModels with freezed
+│   │   ├── services/         # AuthService, TotpService, StorageService
+│   │   ├── providers/        # Riverpod providers with code generation
+│   │   ├── screens/          # UI screens for account management
+│   │   └── utils/            # Constants and utilities
+│   ├── settings/             # App settings & configuration
+│   │   ├── models/           # Settings models with SettingsState
+│   │   ├── providers/        # Settings provider with biometric auth
+│   │   ├── screens/          # Settings UI
+│   │   └── utils/            # Settings constants
+│   ├── splash/               # Splash screen with auth flow
+│   └── home/                 # Main TOTP display screen
+├── providers/                 # Global providers (colors, styles, platform)
+├── ui/                       # Reusable UI components
+└── routes.dart               # GoRouter configuration
+```
+
+### Security Architecture Principles
+* **Secrets Isolation:** All secrets handled in dedicated `TotpService` and `StorageService`
+* **Secure Storage:** Platform-specific secure storage with proper encryption
+* **State Management:** Immutable state with Riverpod and Freezed
+* **Authentication:** Biometric auth with platform-specific implementations
+* **Offline-First:** No network dependencies for core functionality
 
 ## Flutter style guide
 * **SOLID Principles:** Apply SOLID principles throughout the codebase.
@@ -40,8 +70,7 @@ mobile platforms.
 * **Widgets are for UI:** Everything in Flutter's UI is a widget. Compose
   complex UIs from smaller, reusable widgets.
 * **Navigation:** Use a modern routing package like `go_router`.
-  See the [navigation guide](./navigation.md) for a detailed example using
-  `go_router`.
+  Cipher uses `GoRouter` for declarative navigation with route protection.
 
 ## Package Management
 * **Pub Tool:** To manage packages, use the `pub` tool, if available.
@@ -58,6 +87,20 @@ mobile platforms.
   pub add override:<package_name>:1.0.0`.
 * **Removing Dependencies:** To remove a dependency, use the `pub` tool, if it
   is available. Otherwise, run `dart pub remove <package_name>`.
+
+### Cipher-Specific Package Management
+* **Security Dependencies:** Audit all new dependencies for security implications
+* **Core Dependencies:** Key packages include:
+  - `flutter_secure_storage`: For encrypted secret storage
+  - `local_auth`: Biometric authentication
+  - `local_auth_android`/`local_auth_darwin`: Platform-specific auth
+  - `crypto`: Cryptographic operations for TOTP/HOTP
+  - `base32`: Base32 encoding/decoding for secrets
+  - `hooks_riverpod`: State management with lifecycle hooks
+  - `freezed`: Immutable data classes
+  - `go_router`: Declarative navigation
+* **Dependency Verification:** Always verify packages handle sensitive data securely
+* **Version Pinning:** Pin critical security dependencies to specific versions
 
 ## Code Quality
 * **Code structure:** Adhere to maintainable code structure and separation of
@@ -80,6 +123,16 @@ mobile platforms.
   `platform` packages, if appropriate, so you can inject in-memory and fake
   versions of the objects.
 * **Logging:** Use the `logging` package instead of `print`.
+
+### Cipher Security Guidelines
+* **Secret Handling:** Never log, print, or expose secrets in plain text
+* **Secure Storage:** Always use `flutter_secure_storage` for sensitive data
+* **Input Validation:** Validate all user inputs, especially OTPAuth URIs
+* **Timing Attacks:** Use constant-time operations for crypto comparisons
+* **Memory Management:** Clear sensitive data from memory when possible
+* **Error Messages:** Avoid exposing sensitive information in error messages
+* **Authentication State:** Properly manage biometric authentication states
+* **Crypto Standards:** Follow RFC 6238 (TOTP) and RFC 4226 (HOTP) specifications exactly
 
 ## Dart Best Practices
 * **Effective Dart:** Follow the official Effective Dart guidelines
@@ -171,6 +224,13 @@ linter:
 * **Service Organization:** The services that the providers depend on should be defined in a `services` subfolder.
 * **Model Organization:** Any data models should be defined in a `models` subfolder and should use the `freezed` package for immutable data classes.
 * **Constants Organization:** Any feature constants should be defined in `constants.dart` under a `utils` subfolder.
+
+### Cipher-Specific State Management
+* **Security State:** Use `SettingsState` with loading/loaded/error states for secure operations
+* **Account State:** `AuthController` manages account list with real-time TOTP updates
+* **Biometric State:** `BiometricAuthStatus` enum for authentication flow states
+* **Immutable Models:** All models use `@freezed` for immutability and type safety
+* **Code Generation:** Always run `dart run build_runner build` after model changes
 
 
 ### Data Flow
@@ -474,11 +534,11 @@ linter:
 
 ### Example Palette
 
-* **Primary:** #0D47A1 (Dark Blue)
-* **Secondary:** #1976D2 (Medium Blue)
-* **Accent:** #FFC107 (Amber)
-* **Neutral/Text:** #212121 (Almost Black)
-* **Background:** #FEFEFE (Almost White)
+* **Primary:** Color `0x0D47A1` (Dark Blue)
+* **Secondary:** Color `0x1976D2` (Medium Blue)
+* **Accent:** Color `0xFFC107` (Amber)
+* **Neutral/Text:** Color `0x212121` (Almost Black)
+* **Background:** Color `0xFEFEFE` (Almost White)
 
 ## Font Best Practices
 
@@ -575,11 +635,244 @@ education levels, and learning styles.
   VoiceOver (iOS).
 
 
-# Version Control
+# Version Control & Release Management
 
-* **Git:** Use Git for version control, with a clear branching strategy (e.g.,
-  Git Flow, GitHub Flow).
-* **Commit Messages:** Write clear, concise commit messages that describe the
-  changes made. Use the conventional commit format.
-* **Staging Changes:** Stage related changes together in a single commit to keep
-  the commit history clean and meaningful.
+## Git Workflow
+* **Git:** Use Git for version control with a clean, linear history
+* **Conventional Commits:** Follow conventional commit patterns for clear history
+* **Branch Strategy:** Use feature branches for development, main for stable releases
+* **Commit Messages:** Write descriptive commit messages explaining the "why"
+
+## Version Management
+
+### Semantic Versioning Strategy
+Cipher follows semantic versioning (`MAJOR.MINOR.PATCH+BUILD`) as defined in `pubspec.yaml`:
+
+```yaml
+version: 0.2.1+5
+#        │ │ │ │
+#        │ │ │ └── Build number (auto-increment for each build)
+#        │ │ └──── Patch (bug fixes, security patches)
+#        │ └────── Minor (new features, UI improvements)
+#        └──────── Major (breaking changes, major rewrites)
+```
+
+### When to Update Versions
+
+#### Build Number (`+N`) - Every Build
+- Increment for every CI/CD build
+- Internal testing builds
+- Development snapshots
+- Hot fixes
+
+#### Patch Version (`X.X.N`) - Bug Fixes & Security
+- Security vulnerability fixes
+- Critical bug fixes
+- Performance improvements
+- Documentation updates
+- Code refactoring without functional changes
+
+#### Minor Version (`X.N.0`) - New Features
+- New authenticator features (HOTP support, backup/restore)
+- UI/UX improvements
+- New settings or configuration options
+- Biometric authentication enhancements
+- QR code scanning improvements
+
+#### Major Version (`N.0.0`) - Breaking Changes
+- Complete UI redesign
+- Data format changes requiring migration
+- Architecture overhauls
+- API breaking changes
+- First public release (1.0.0)
+
+### Version Update Process
+
+#### Manual Version Updates
+```bash
+# Update pubspec.yaml version manually
+version: 0.3.0+1
+
+# Commit the version change
+git add pubspec.yaml
+git commit -m "chore: bump version to v0.3.0+1"
+
+# Create annotated tag with release notes
+git tag -a v0.3.0+1 -m "Release v0.3.0+1
+
+New Features:
+- Enhanced biometric authentication
+- Improved TOTP generation performance
+- Added dark theme support
+
+Security Improvements:
+- Updated encryption algorithms
+- Enhanced secure storage implementation
+
+Bug Fixes:
+- Fixed QR code scanning edge cases
+- Resolved clipboard timeout issues"
+```
+
+#### Automated Version Bumping
+Create a script for consistent version management:
+
+```dart
+// scripts/version_bump.dart
+import 'dart:io';
+
+Future<void> bumpVersion(String type) async {
+  final pubspecFile = File('pubspec.yaml');
+  final content = await pubspecFile.readAsString();
+  
+  // Parse current version
+  final versionMatch = RegExp(r'version: (\d+)\.(\d+)\.(\d+)\+(\d+)')
+      .firstMatch(content);
+  
+  if (versionMatch == null) throw 'Version not found';
+  
+  var major = int.parse(versionMatch.group(1)!);
+  var minor = int.parse(versionMatch.group(2)!);
+  var patch = int.parse(versionMatch.group(3)!);
+  var build = int.parse(versionMatch.group(4)!);
+  
+  switch (type) {
+    case 'major':
+      major++; minor = 0; patch = 0; build = 1;
+      break;
+    case 'minor':
+      minor++; patch = 0; build = 1;
+      break;
+    case 'patch':
+      patch++; build = 1;
+      break;
+    case 'build':
+      build++;
+      break;
+  }
+  
+  final newVersion = '$major.$minor.$patch+$build';
+  final newContent = content.replaceFirst(
+    RegExp(r'version: \d+\.\d+\.\d+\+\d+'),
+    'version: $newVersion',
+  );
+  
+  await pubspecFile.writeAsString(newContent);
+  print('Version bumped to: $newVersion');
+}
+```
+
+### Git Tagging Strategy
+
+#### Tag Naming Convention
+- Use `v` prefix: `v0.2.1+5`
+- Match exactly with pubspec.yaml version
+- Use annotated tags with detailed release notes
+
+#### Tag Creation Examples
+```bash
+# Security release
+git tag -a v0.2.1+5 -m "Security Release v0.2.1+5
+
+Critical Security Fixes:
+- Fixed potential timing attack in TOTP generation
+- Updated secure storage encryption method
+- Enhanced biometric authentication security
+
+This is a critical security update. All users should update immediately."
+
+# Feature release
+git tag -a v0.3.0+1 -m "Feature Release v0.3.0+1
+
+New Features:
+- HOTP support for counter-based codes
+- Backup and restore functionality
+- Enhanced QR code scanning with better error handling
+- Improved accessibility support
+
+UI/UX Improvements:
+- Redesigned settings screen
+- Better dark theme support
+- Improved TOTP timer visualization
+
+Technical Improvements:
+- Migrated to new state management pattern
+- Enhanced error handling throughout the app
+- Performance optimizations for large account lists"
+```
+
+### Release Workflow
+
+#### Pre-Release Checklist
+1. **Security Review:** Ensure no sensitive data in commits
+2. **Code Quality:** Run `dart analyze` and fix all issues
+3. **Testing:** Execute full test suite
+4. **Dependencies:** Update and audit all dependencies
+5. **Documentation:** Update README and changelogs
+
+#### Release Process
+```bash
+# 1. Create release branch
+git checkout -b release/v0.3.0
+
+# 2. Update version in pubspec.yaml
+# 3. Update CHANGELOG.md with release notes
+# 4. Run final tests
+flutter test
+dart analyze
+
+# 5. Commit release changes
+git add .
+git commit -m "chore: prepare release v0.3.0+1"
+
+# 6. Merge to main
+git checkout main
+git merge release/v0.3.0 --no-ff
+
+# 7. Create and push tag
+git tag -a v0.3.0+1 -F release_notes.txt
+git push origin main --tags
+
+# 8. Clean up release branch
+git branch -d release/v0.3.0
+```
+
+### Development Versioning
+
+#### Pre-Release Versions
+- Use semantic versioning for pre-release: `0.3.0-alpha.1+10`
+- Alpha: Early development, major features incomplete
+- Beta: Feature complete, testing and bug fixes
+- RC: Release candidate, final testing
+
+#### Continuous Integration
+Automate version bumping in CI/CD:
+
+```yaml
+# .github/workflows/version.yml
+name: Auto Version Bump
+on:
+  push:
+    branches: [main]
+
+jobs:
+  version:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Bump build number
+        run: dart scripts/version_bump.dart build
+      - name: Commit version bump
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add pubspec.yaml
+          git commit -m "chore: auto-bump build number [skip ci]"
+          git push
+```
+
+### Security Considerations
+- **Never commit secrets:** Use `.gitignore` for sensitive files
+- **Sign tags:** Use GPG signing for release tags
+- **Audit dependencies:** Review all dependency updates for security
+- **Change logs:** Document security fixes without revealing vulnerabilities
