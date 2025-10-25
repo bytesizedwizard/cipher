@@ -105,4 +105,11 @@ class AuthController extends _$AuthController with WidgetsBindingObserver {
     final (account, secret) = _totpService.decode(uri);
     await addAccount(account, secret);
   }
+
+  Future<void> deleteAccount(String id) async {
+    await _authService.deleteAccount(id);
+
+    _secretCache.remove(id);
+    await refreshAccounts('');
+  }
 }
