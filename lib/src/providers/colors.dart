@@ -15,6 +15,8 @@ abstract class ColorPalette {
   Color get error;
   Color get warning;
   Color get success;
+
+  Color fromHex(String hexString);
 }
 
 class LightPalette implements ColorPalette {
@@ -38,6 +40,14 @@ class LightPalette implements ColorPalette {
 
   @override
   Color get success => const Color.fromARGB(255, 0, 87, 55);
+
+  @override
+  Color fromHex(String hexString) {
+    final buffer = StringBuffer();
+    if (hexString.length == 6 || hexString.length == 7) buffer.write('ff');
+    buffer.write(hexString.replaceFirst('#', ''));
+    return Color(int.parse(buffer.toString(), radix: 16));
+  }
 }
 
 class DarkPalette implements ColorPalette {
@@ -61,6 +71,14 @@ class DarkPalette implements ColorPalette {
 
   @override
   Color get success => const Color.fromARGB(255, 10, 192, 125);
+
+  @override
+  Color fromHex(String hexString) {
+    final buffer = StringBuffer();
+    if (hexString.length == 6 || hexString.length == 7) buffer.write('ff');
+    buffer.write(hexString.replaceFirst('#', ''));
+    return Color(int.parse(buffer.toString(), radix: 16));
+  }
 }
 
 @Riverpod(keepAlive: true)
