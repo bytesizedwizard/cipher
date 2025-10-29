@@ -3,15 +3,18 @@ import 'package:cipher/src/feature/account/utils/constants.dart';
 import 'package:cipher/src/feature/settings/models/settings_models.dart';
 import 'package:cipher/src/feature/settings/providers/settings_provider.dart';
 import 'package:cipher/src/providers/colors.dart';
+import 'package:cipher/src/providers/platform.dart';
 import 'package:cipher/src/providers/styles.dart';
 import 'package:cipher/src/ui/widgets/app_bar.dart';
 import 'package:cipher/src/ui/widgets/bottom_bars.dart';
+import 'package:cipher/src/ui/widgets/buttons.dart';
 import 'package:cipher/src/ui/widgets/logo_type.dart';
 import 'package:cipher/src/ui/widgets/text_field.dart';
 import 'package:cipher/src/ui/widgets/timer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
@@ -32,10 +35,39 @@ class HomeScreen extends HookConsumerWidget {
       const Duration(milliseconds: 300),
     );
 
+    final settings = ref.watch(settingsControllerProvider);
+
     useEffect(() {
       ref
           .read(authControllerProvider.notifier)
           .refreshAccounts(debouncedSearchText ?? '');
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        settings.whenOrNull(
+          loaded: (settings) {
+            if (!settings.doNotShowBetaDisclaimer) {
+              showModalBottomSheet(
+                context: context,
+                isDismissible: false,
+                enableDrag: false,
+                builder: (context) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24.0,
+                      vertical: 32.0,
+                    ),
+                    child: const BetaDisclaimerWidget(),
+                  );
+                },
+                backgroundColor: palette.primary,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              );
+            }
+          },
+        );
+      });
 
       return null;
     }, [debouncedSearchText]);
@@ -184,9 +216,94 @@ class HomeScreen extends HookConsumerWidget {
                   totalSeconds: AuthConstants.defaultPeriod,
                 ),
               ),
-              Divider(),
+              Divider(indent: 16, endIndent: 16),
             ],
           ],
+        );
+      },
+    );
+  }
+}
+
+class BetaDisclaimerWidget extends HookConsumerWidget {
+  const BetaDisclaimerWidget({super.key});
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final textStyles = ref.watch(textStyleProvider);
+    final palette = ref.watch(colorPaletteProvider);
+
+    final packageInfo = ref.watch(platformInfoProvider);
+
+    final doNotShowAgain = useState<bool>(false);
+
+    return packageInfo.maybeWhen(
+      orElse: () => const CircularProgressIndicator(),
+      data: (data) {
+        return SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Logo(full: true, height: 25),
+              const SizedBox(height: 20),
+              Text(
+                "This version of ${data.appName} is still under active development, and while we’ve built it with privacy and security at the core, occasional issues may occur.",
+                style: textStyles.body.copyWith(fontWeight: FontWeight.w500),
+              ),
+              const Gap(10),
+              Text(
+                "Please remember that ${data.appName} stores all authentication data locally on your device. We do not back up, sync, or have access to your secrets.",
+                style: textStyles.body.copyWith(fontWeight: FontWeight.w500),
+              ),
+              const Gap(10),
+              Text(
+                "For your safety, ensure that you have securely saved the recovery codes for any accounts you add. If you are locked out, those recovery codes will be the only way to regain access to your accounts.",
+                style: textStyles.body.copyWith(fontWeight: FontWeight.w500),
+              ),
+              const Gap(20),
+              Row(
+                children: [
+                  SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: Checkbox(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      visualDensity: VisualDensity.compact,
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      checkColor: palette.primary,
+                      value: doNotShowAgain.value,
+                      activeColor: palette.accent,
+                      onChanged: (value) {
+                        doNotShowAgain.value = value ?? false;
+                      },
+                    ),
+                  ),
+                  const Gap(10),
+                  Expanded(
+                    child: Text(
+                      "Do not show this message again",
+                      style: textStyles.body,
+                    ),
+                  ),
+                ],
+              ),
+              const Gap(20),
+              SemanticElevatedButton(
+                label: "I Understand",
+                onPressed: () {
+                  if (doNotShowAgain.value) {
+                    ref
+                        .read(settingsControllerProvider.notifier)
+                        .acknowledgeBetaDisclaimer();
+                  }
+                  Navigator.of(context).pop();
+                },
+                semanticLabel: "I Understand Beta Disclaimer Button",
+              ),
+              const Gap(10),
+            ],
+          ),
         );
       },
     );
