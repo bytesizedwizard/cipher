@@ -7,27 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0+1] - 2025-10-29
+
 ### Added
 - Beta disclaimer modal with user acknowledgment system
 - Privacy policy and terms of service links in settings
 - Enhanced QR code scanner with visual corner overlay indicators
 - Comprehensive user consent flow for beta software usage
 - URL launcher functionality for external links
+- Comprehensive changelog management workflow
+- Automatic changelog update guidelines in development process
 
 ### Fixed
-- Clipboard timeout default value now properly uses settings constants (30 seconds)
+- Clipboard timeout default value now properly uses settings constants (30 seconds) - Issue #2
 - Biometric authentication default settings now use configuration constants
 - Beta disclaimer display logic with proper state management
+- Account validation improvements in QR scanner - Issue #1
 
 ### Changed
 - Improved empty state messaging on home screen for better user guidance
 - Enhanced divider styling with proper indentation in account list
 - Better settings provider initialization with centralized constants
+- Enhanced development guidelines with systematic changelog management
 
 ### Security
 - Added user consent acknowledgment for beta software usage
 - Enhanced clipboard security with proper timeout configuration
 - Improved external link handling with secure URL launcher
+- Centralized security settings management prevents configuration drift
+- Privacy-first documentation and legal compliance features
 
 ## [0.1.1+2] - 2025-10-29
 
