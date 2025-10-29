@@ -3,7 +3,6 @@ import 'package:cipher/src/feature/settings/providers/settings_provider.dart';
 import 'package:cipher/src/providers/colors.dart';
 import 'package:cipher/src/routes.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 void main() {
@@ -11,19 +10,16 @@ void main() {
 
   runApp(
     ProviderScope(
-      child: SensitiveContent(
-        sensitivity: ContentSensitivity.sensitive,
-        child: Consumer(
-          builder: (context, ref, _) {
-            final settingsNotifier = ref.watch(
-              settingsControllerProvider.notifier,
-            );
+      child: Consumer(
+        builder: (context, ref, _) {
+          final settingsNotifier = ref.watch(
+            settingsControllerProvider.notifier,
+          );
 
-            settingsNotifier.loadSettings();
+          settingsNotifier.loadSettings();
 
-            return const CipherApp();
-          },
-        ),
+          return const CipherApp();
+        },
       ),
     ),
   );
@@ -39,9 +35,32 @@ class CipherApp extends ConsumerWidget {
     final settings = ref.watch(settingsControllerProvider);
 
     return settings.maybeWhen(
-      orElse: () => Container(),
+      orElse: () {
+        final ThemeMode themeMode =
+            WidgetsBinding.instance.platformDispatcher.platformBrightness ==
+                Brightness.dark
+            ? ThemeMode.dark
+            : ThemeMode.light;
+
+        return MaterialApp(
+          debugShowCheckedModeBanner: false,
+          theme: ThemeData(scaffoldBackgroundColor: palette.primary),
+          themeMode: themeMode,
+          builder: (context, child) {
+            return Scaffold(
+              body: Center(
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: palette.accent,
+                ),
+              ),
+            );
+          },
+        );
+      },
       loaded: (settings) {
         return MaterialApp.router(
+          debugShowCheckedModeBanner: false,
           theme: ThemeData(
             scaffoldBackgroundColor: palette.primary,
             appBarTheme: AppBarTheme(
