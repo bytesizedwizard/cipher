@@ -1,3 +1,4 @@
+import 'package:base32/base32.dart';
 import 'package:cipher/src/feature/account/models/auth_models.dart';
 import 'package:cipher/src/feature/account/providers/auth_providers.dart';
 import 'package:cipher/src/feature/account/utils/constants.dart';
@@ -66,77 +67,185 @@ class _AddEntityScreenState extends ConsumerState<AddEntityScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Container(
-                decoration: BoxDecoration(
-                  color: palette.accent,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                width: 350,
-                height: 350,
-                child: MobileScanner(
-                  controller: _controller!,
-                  errorBuilder: (context, exception) {
-                    return Padding(
-                      padding: const EdgeInsets.all(25.0),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Icon(Symbols.error, size: 36, color: palette.primary),
-                          const Gap(10),
-                          Text(
-                            "Error",
-                            style: textStyles.heading3.copyWith(
-                              color: palette.primary,
-                              fontWeight: FontWeight.bold,
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  decoration: BoxDecoration(color: palette.accent),
+                  width: 350,
+                  height: 350,
+                  child: MobileScanner(
+                    scanWindow: Rect.fromLTRB(50, 50, 50, 50),
+                    controller: _controller!,
+                    overlayBuilder: (context, constraints) {
+                      return SizedBox(
+                        width: 250,
+                        height: 250,
+                        child: Stack(
+                          children: [
+                            Positioned(
+                              top: 0,
+                              left: 0,
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  border: BoxBorder.fromLTRB(
+                                    left: BorderSide(
+                                      color: palette.fromHex("#FFFFFF"),
+                                      width: 4,
+                                    ),
+                                    top: BorderSide(
+                                      color: palette.fromHex("#FFFFFF"),
+                                      width: 4,
+                                    ),
+                                  ),
+                                  borderRadius: BorderRadius.only(
+                                    topLeft: Radius.circular(12),
+                                  ),
+                                ),
+                                width: 50,
+                                height: 50,
+                              ),
                             ),
-                            textAlign: TextAlign.center,
-                          ),
-                          const Gap(10),
-                          Text(
-                            exception.errorDetails?.message ?? 'Unknown error',
-                            style: textStyles.body.copyWith(
-                              color: palette.primary,
+                            Positioned(
+                              top: 0,
+                              right: 0,
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  border: BoxBorder.fromLTRB(
+                                    right: BorderSide(
+                                      color: palette.fromHex("#FFFFFF"),
+                                      width: 4,
+                                    ),
+                                    top: BorderSide(
+                                      color: palette.fromHex("#FFFFFF"),
+                                      width: 4,
+                                    ),
+                                  ),
+                                  borderRadius: BorderRadius.only(
+                                    topRight: Radius.circular(12),
+                                  ),
+                                ),
+                                width: 50,
+                                height: 50,
+                              ),
                             ),
-                            textAlign: TextAlign.center,
-                          ),
-                          const Gap(5),
-                          Text(
-                            "Error Code: ${exception.errorCode.hashCode}",
-                            style: textStyles.body.copyWith(
-                              color: palette.primary,
-                              fontWeight: FontWeight.bold,
+                            Positioned(
+                              bottom: 0,
+                              left: 0,
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  border: BoxBorder.fromLTRB(
+                                    left: BorderSide(
+                                      color: palette.fromHex("#FFFFFF"),
+                                      width: 4,
+                                    ),
+                                    bottom: BorderSide(
+                                      color: palette.fromHex("#FFFFFF"),
+                                      width: 4,
+                                    ),
+                                  ),
+                                  borderRadius: BorderRadius.only(
+                                    bottomLeft: Radius.circular(12),
+                                  ),
+                                ),
+                                width: 50,
+                                height: 50,
+                              ),
                             ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                  fit: BoxFit.contain,
-                  onDetect: (result) {
-                    final keyUri = result.barcodes.first.rawValue;
-                    if (keyUri != null &&
-                        keyUri.startsWith(AuthConstants.uriScheme)) {
-                      ref
-                          .read(authControllerProvider.notifier)
-                          .addAccountFromUri(keyUri);
-
-                      if (context.canPop()) context.pop();
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            "Scanned code is not valid. Please try again.",
-                            style: textStyles.body.copyWith(
-                              color: palette.primary,
+                            Positioned(
+                              bottom: 0,
+                              right: 0,
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  border: BoxBorder.fromLTRB(
+                                    right: BorderSide(
+                                      color: palette.fromHex("#FFFFFF"),
+                                      width: 4,
+                                    ),
+                                    bottom: BorderSide(
+                                      color: palette.fromHex("#FFFFFF"),
+                                      width: 4,
+                                    ),
+                                  ),
+                                  borderRadius: BorderRadius.only(
+                                    bottomRight: Radius.circular(12),
+                                  ),
+                                ),
+                                width: 50,
+                                height: 50,
+                              ),
                             ),
-                          ),
-                          backgroundColor: palette.error,
+                          ],
                         ),
                       );
-                    }
-                  },
+                    },
+                    errorBuilder: (context, exception) {
+                      return Padding(
+                        padding: const EdgeInsets.all(25.0),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Icon(
+                              Symbols.error,
+                              size: 36,
+                              color: palette.primary,
+                            ),
+                            const Gap(10),
+                            Text(
+                              "Error",
+                              style: textStyles.heading3.copyWith(
+                                color: palette.primary,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            const Gap(10),
+                            Text(
+                              exception.errorDetails?.message ??
+                                  'Unknown error',
+                              style: textStyles.body.copyWith(
+                                color: palette.primary,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            const Gap(5),
+                            Text(
+                              "Error Code: ${exception.errorCode.hashCode}",
+                              style: textStyles.body.copyWith(
+                                color: palette.primary,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                    fit: BoxFit.cover,
+                    onDetect: (result) {
+                      final keyUri = result.barcodes.first.rawValue;
+                      if (keyUri != null &&
+                          keyUri.startsWith(AuthConstants.uriScheme)) {
+                        ref
+                            .read(authControllerProvider.notifier)
+                            .addAccountFromUri(keyUri);
+
+                        if (context.canPop()) context.pop();
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              "Scanned code is not valid. Please try again.",
+                              style: textStyles.body.copyWith(
+                                color: palette.primary,
+                              ),
+                            ),
+                            backgroundColor: palette.error,
+                          ),
+                        );
+                      }
+                    },
+                  ),
                 ),
               ),
               const Gap(25),
@@ -155,6 +264,12 @@ class _AddEntityScreenState extends ConsumerState<AddEntityScreen> {
                       onSaved: (value) {
                         accountDetails.value['issuer'] = value ?? '';
                       },
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return "Please enter an issuer name";
+                        }
+                        return null;
+                      },
                     ),
                     const Gap(15),
                     CustomTextFormField(
@@ -162,6 +277,13 @@ class _AddEntityScreenState extends ConsumerState<AddEntityScreen> {
                       prefixIcon: Icon(Symbols.person, color: palette.accent),
                       onSaved: (value) {
                         accountDetails.value['name'] = value ?? '';
+                      },
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Please enter a username or email';
+                        }
+
+                        return null;
                       },
                     ),
                     const Gap(15),
@@ -172,6 +294,15 @@ class _AddEntityScreenState extends ConsumerState<AddEntityScreen> {
                         accountDetails.value['secret'] = value ?? '';
                       },
                       obscureText: true,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Please enter a secret key';
+                        } else if (base32.isValid(value) == false) {
+                          return 'Please enter a valid secret key';
+                        }
+
+                        return null;
+                      },
                     ),
                     const Gap(15),
                     SemanticElevatedButton(
