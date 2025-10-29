@@ -816,7 +816,7 @@ Technical Improvements:
 git checkout -b release/v0.3.0
 
 # 2. Update version in pubspec.yaml
-# 3. Update CHANGELOG.md with release notes
+# 3. Update CHANGELOG.md with release notes (move Unreleased to new version)
 # 4. Run final tests
 flutter test
 dart analyze
@@ -836,6 +836,87 @@ git push origin main --tags
 # 8. Clean up release branch
 git branch -d release/v0.3.0
 ```
+
+### Changelog Management
+
+#### Changelog Structure
+Cipher maintains a `CHANGELOG.md` file following [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) format:
+
+```markdown
+# Changelog
+
+## [Unreleased]
+### Added
+- New features for upcoming release
+
+### Fixed  
+- Bug fixes for upcoming release
+
+### Changed
+- Changes for upcoming release
+
+### Security
+- Security improvements for upcoming release
+
+## [0.3.0+1] - 2025-10-29
+### Added
+- Feature implementations from previous release
+
+### Fixed
+- Bug fixes from previous release
+```
+
+#### Automatic Changelog Updates
+When creating a new release, **always update the CHANGELOG.md**:
+
+1. **Move Unreleased Section**: Convert `[Unreleased]` to the new version number and date
+2. **Add New Unreleased Section**: Create empty `[Unreleased]` section for future changes
+3. **Follow Categories**: Use consistent categorization (Added, Fixed, Changed, Security, Removed, Deprecated)
+4. **Include Security Context**: Always explain security implications for Cipher changes
+5. **Link to Commits**: Reference relevant commit hashes for major changes
+
+#### Changelog Update Template
+```markdown
+# Changelog
+
+## [Unreleased]
+
+## [X.Y.Z+N] - YYYY-MM-DD
+### Added
+- List of new features
+- New UI components or screens
+- New security features
+
+### Fixed  
+- Bug fixes with security implications noted
+- Performance improvements
+- Error handling enhancements
+
+### Changed
+- UI/UX improvements
+- Enhanced security measures
+- Breaking changes (for major versions)
+
+### Security
+- Security vulnerability fixes
+- Enhanced authentication flows
+- Improved data protection measures
+
+### Removed
+- Deprecated features (if any)
+- Unused dependencies
+
+### Deprecated
+- Features marked for future removal
+```
+
+#### Security-Focused Changelog Entries
+For Cipher, always include security context:
+- **Explain security implications** of each change
+- **Document security fixes** without revealing vulnerabilities
+- **Highlight privacy improvements** and data protection measures
+- **Note authentication enhancements** and biometric changes
+- **Reference security standards** (RFC 6238, RFC 4226) when relevant
 
 ### Development Versioning
 
@@ -870,6 +951,38 @@ jobs:
           git commit -m "chore: auto-bump build number [skip ci]"
           git push
 ```
+
+#### Automated Changelog Workflow
+When committing changes, **always update the CHANGELOG.md Unreleased section**:
+
+```bash
+# Before committing any changes, update CHANGELOG.md
+# Add entries under [Unreleased] section
+
+git add CHANGELOG.md
+git commit -m "docs: update changelog for upcoming features
+
+- Document new beta disclaimer system
+- Add privacy policy and terms links
+- Note QR scanner UI enhancements
+- Record security improvements"
+
+# When creating release commits, move Unreleased to versioned section
+git add CHANGELOG.md pubspec.yaml
+git commit -m "chore: prepare release v0.2.0+1
+
+- Move changelog entries from Unreleased to v0.2.0+1
+- Update version in pubspec.yaml
+- Add release date and comprehensive notes"
+```
+
+#### Changelog Commit Guidelines
+- **Update during development**: Add entries to `[Unreleased]` as features are developed
+- **Categorize properly**: Use correct sections (Added, Fixed, Changed, Security)
+- **Include security context**: Always explain security implications for Cipher
+- **Reference commits**: Link to specific commits for major changes
+- **Release preparation**: Move `[Unreleased]` content to new version section during release
+- **Maintain history**: Never remove or modify existing version entries
 
 ### Security Considerations
 - **Never commit secrets:** Use `.gitignore` for sensitive files
