@@ -25,8 +25,8 @@ enum BiometricAuthStatus {
 class SettingsController extends _$SettingsController {
   final _defaultSettings = Settings(
     themeMode: ThemeMode.system,
-    clipboardTimeout: 30,
-    biometricAuthEnabled: false,
+    clipboardTimeout: SettingsConstants.defaultClipboardTimeout,
+    biometricAuthEnabled: SettingsConstants.defaultBiometricAuthEnabled,
   );
   StorageService get _storageService => ref.read(storageServiceProvider);
 
@@ -115,6 +115,16 @@ class SettingsController extends _$SettingsController {
         return BiometricAuthStatus.unknown;
       }
     }
+  }
+
+  Future<void> acknowledgeBetaDisclaimer() async {
+    state.whenOrNull(
+      loaded: (settings) {
+        final updated = settings.copyWith(doNotShowBetaDisclaimer: true);
+        state = SettingsState.loaded(updated);
+        saveSettings(updated);
+      },
+    );
   }
 
   Future<Settings?> saveSettings(Settings settings) async {
