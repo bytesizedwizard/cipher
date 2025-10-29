@@ -29,7 +29,11 @@ class StorageService {
     if (source == StorageSource.secureStorage) {
       return await _secureStorage.read(key: key);
     } else {
-      return await _sharedPreferencesAsync.getString(key);
+      try {
+        return await _sharedPreferencesAsync.getString(key);
+      } catch (e) {
+        return null;
+      }
     }
   }
 
