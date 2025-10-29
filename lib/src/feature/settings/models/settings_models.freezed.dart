@@ -399,7 +399,7 @@ as String,
 mixin _$Settings {
 
  ThemeMode get themeMode; int get clipboardTimeout;// in milliseconds
- bool get biometricAuthEnabled;
+ bool get biometricAuthEnabled; bool get doNotShowBetaDisclaimer;
 /// Create a copy of Settings
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -410,16 +410,16 @@ $SettingsCopyWith<Settings> get copyWith => _$SettingsCopyWithImpl<Settings>(thi
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Settings&&(identical(other.themeMode, themeMode) || other.themeMode == themeMode)&&(identical(other.clipboardTimeout, clipboardTimeout) || other.clipboardTimeout == clipboardTimeout)&&(identical(other.biometricAuthEnabled, biometricAuthEnabled) || other.biometricAuthEnabled == biometricAuthEnabled));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Settings&&(identical(other.themeMode, themeMode) || other.themeMode == themeMode)&&(identical(other.clipboardTimeout, clipboardTimeout) || other.clipboardTimeout == clipboardTimeout)&&(identical(other.biometricAuthEnabled, biometricAuthEnabled) || other.biometricAuthEnabled == biometricAuthEnabled)&&(identical(other.doNotShowBetaDisclaimer, doNotShowBetaDisclaimer) || other.doNotShowBetaDisclaimer == doNotShowBetaDisclaimer));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,themeMode,clipboardTimeout,biometricAuthEnabled);
+int get hashCode => Object.hash(runtimeType,themeMode,clipboardTimeout,biometricAuthEnabled,doNotShowBetaDisclaimer);
 
 @override
 String toString() {
-  return 'Settings(themeMode: $themeMode, clipboardTimeout: $clipboardTimeout, biometricAuthEnabled: $biometricAuthEnabled)';
+  return 'Settings(themeMode: $themeMode, clipboardTimeout: $clipboardTimeout, biometricAuthEnabled: $biometricAuthEnabled, doNotShowBetaDisclaimer: $doNotShowBetaDisclaimer)';
 }
 
 
@@ -430,7 +430,7 @@ abstract mixin class $SettingsCopyWith<$Res>  {
   factory $SettingsCopyWith(Settings value, $Res Function(Settings) _then) = _$SettingsCopyWithImpl;
 @useResult
 $Res call({
- ThemeMode themeMode, int clipboardTimeout, bool biometricAuthEnabled
+ ThemeMode themeMode, int clipboardTimeout, bool biometricAuthEnabled, bool doNotShowBetaDisclaimer
 });
 
 
@@ -447,11 +447,12 @@ class _$SettingsCopyWithImpl<$Res>
 
 /// Create a copy of Settings
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? themeMode = null,Object? clipboardTimeout = null,Object? biometricAuthEnabled = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? themeMode = null,Object? clipboardTimeout = null,Object? biometricAuthEnabled = null,Object? doNotShowBetaDisclaimer = null,}) {
   return _then(Settings(
 themeMode: null == themeMode ? _self.themeMode : themeMode // ignore: cast_nullable_to_non_nullable
 as ThemeMode,clipboardTimeout: null == clipboardTimeout ? _self.clipboardTimeout : clipboardTimeout // ignore: cast_nullable_to_non_nullable
 as int,biometricAuthEnabled: null == biometricAuthEnabled ? _self.biometricAuthEnabled : biometricAuthEnabled // ignore: cast_nullable_to_non_nullable
+as bool,doNotShowBetaDisclaimer: null == doNotShowBetaDisclaimer ? _self.doNotShowBetaDisclaimer : doNotShowBetaDisclaimer // ignore: cast_nullable_to_non_nullable
 as bool,
   ));
 }

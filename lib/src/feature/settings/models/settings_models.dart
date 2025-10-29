@@ -34,10 +34,15 @@ class Settings with _$Settings {
   )
   final bool biometricAuthEnabled;
 
+  @override
+  @JsonKey(name: 'do_not_show_beta_disclaimer', defaultValue: false)
+  final bool doNotShowBetaDisclaimer;
+
   const Settings({
     required this.themeMode,
     required this.clipboardTimeout,
     required this.biometricAuthEnabled,
+    this.doNotShowBetaDisclaimer = false,
   });
 
   factory Settings.fromJson(Map<String, Object?> json) =>
