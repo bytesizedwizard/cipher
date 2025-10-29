@@ -12,6 +12,11 @@ abstract class SettingsConstants {
     SettingsOption.exportData: "Export Data",
     SettingsOption.openSourceLicenses: "Open Source Licenses",
   };
+
+  static const String privacyPolicyUrl =
+      "https://bytesizedwizard.dev/cipher/privacy";
+  static const String termsOfServiceUrl =
+      "https://bytesizedwizard.dev/cipher/terms";
 }
 
 enum SettingsOption {
