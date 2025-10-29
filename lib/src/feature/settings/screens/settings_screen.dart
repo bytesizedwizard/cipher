@@ -14,6 +14,8 @@ import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:material_symbols_icons/symbols.dart';
+import 'package:url_launcher/url_launcher_string.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -158,6 +160,41 @@ class SettingsScreen extends ConsumerWidget {
               //   textStyles: textStyles,
               //   palette: palette,
               // ),
+              const Gap(20),
+              ..._buildSettingsSection(
+                title: "Privacy & Usage",
+                textStyles: textStyles,
+                palette: palette,
+                children: [
+                  _buildSettingsTile(
+                    leading: Symbols.contract,
+                    title: const Text("Terms of Use"),
+                    onTap: () async {
+                      if (await canLaunchUrlString(
+                        SettingsConstants.termsOfServiceUrl,
+                      )) {
+                        launchUrlString(SettingsConstants.termsOfServiceUrl);
+                      }
+                    },
+                    textStyles: textStyles,
+                    palette: palette,
+                  ),
+                  const Divider(height: 0),
+                  _buildSettingsTile(
+                    leading: Symbols.encrypted,
+                    title: const Text("Privacy Policy"),
+                    onTap: () async {
+                      if (await canLaunchUrlString(
+                        SettingsConstants.privacyPolicyUrl,
+                      )) {
+                        launchUrlString(SettingsConstants.privacyPolicyUrl);
+                      }
+                    },
+                    textStyles: textStyles,
+                    palette: palette,
+                  ),
+                ],
+              ),
               const Gap(60),
               ..._buildAboutSection(
                 context,
