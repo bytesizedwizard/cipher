@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0+4] - 2025-10-31
+
+### Added
+- Tap-to-focus functionality in QR code scanner for improved scanning accuracy
+- Enhanced camera interaction allowing manual focus control on difficult-to-scan codes
+
+### Changed
+- Updated mobile_scanner from 7.0.1 to 7.1.3 for performance and security improvements
+- Updated go_router to 16.3.0 with navigation enhancements
+- Updated material_symbols_icons to 4.2874.0 with latest icon set
+- Updated multiple transitive dependencies for security and compatibility
+- Enhanced Android and iOS platform configurations for URL launcher support
+- Improved development environment with latest toolchain versions
+
+### Security
+- Security improvements through dependency updates across the stack
+- Enhanced platform-specific configurations for secure external link handling
+- Updated build system components for better security and compatibility
+
 ## [0.2.0+1] - 2025-10-29
 
 ### Added
