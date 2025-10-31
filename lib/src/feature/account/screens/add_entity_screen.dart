@@ -74,6 +74,7 @@ class _AddEntityScreenState extends ConsumerState<AddEntityScreen> {
                   width: 350,
                   height: 350,
                   child: MobileScanner(
+                    tapToFocus: true,
                     scanWindow: Rect.fromLTRB(50, 50, 50, 50),
                     controller: _controller!,
                     overlayBuilder: (context, constraints) {
