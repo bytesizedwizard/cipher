@@ -1,6 +1,7 @@
 import 'package:cipher/src/feature/account/screens/add_entity_screen.dart';
 import 'package:cipher/src/feature/account/screens/view_account_screen.dart';
 import 'package:cipher/src/feature/home/screens/home_screen.dart';
+import 'package:cipher/src/feature/home/screens/how_to_screen.dart';
 import 'package:cipher/src/feature/settings/screens/settings_screen.dart';
 import 'package:cipher/src/feature/settings/utils/constants.dart';
 import 'package:cipher/src/feature/splash/screens/splash_screen.dart';
@@ -30,6 +31,12 @@ final router = GoRouter(
       path: "/home",
       pageBuilder: (context, state) {
         return NoTransitionPage<void>(key: state.pageKey, child: HomeScreen());
+      },
+    ),
+    GoRoute(
+      path: "/howto",
+      builder: (context, state) {
+        return const HowToScreen();
       },
     ),
     GoRoute(

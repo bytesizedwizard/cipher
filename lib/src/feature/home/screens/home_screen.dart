@@ -17,6 +17,7 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 class HomeScreen extends HookConsumerWidget {
   const HomeScreen({super.key});
@@ -78,6 +79,18 @@ class HomeScreen extends HookConsumerWidget {
         titleSpacing: 25,
         title: const Logo(full: true, fit: BoxFit.contain, height: 20),
         elevation: 0,
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 8.0),
+            child: FlatIconButton(
+              icon: Icon(Symbols.help),
+              onPressed: () {
+                context.push("/howto");
+              },
+              tooltip: "How to use",
+            ),
+          ),
+        ],
         bottom: PreferredSize(
           preferredSize: Size.fromHeight(50),
           child: Padding(
@@ -116,13 +129,23 @@ class HomeScreen extends HookConsumerWidget {
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         Text(
-                          "Nothing to see here...",
+                          "Nothing to see here!",
                           style: textStyle.heading2,
                           textAlign: TextAlign.center,
                         ),
-                        const SizedBox(height: 10),
+                        const Gap(10),
                         Text(
                           "Tap the + button below to add your first account.",
+                          style: textStyle.body.copyWith(
+                            color: palette.accent.withValues(alpha: 0.7),
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const Gap(10),
+                        Text("OR", style: textStyle.body),
+                        const Gap(10),
+                        Text(
+                          "Tap the help button in the top right corner for a quick guide on how to use the app.",
                           style: textStyle.body.copyWith(
                             color: palette.accent.withValues(alpha: 0.7),
                           ),
