@@ -10,6 +10,7 @@ class Logo extends ConsumerWidget {
   final double? width;
   final double? height;
   final ThemeMode? mode;
+  final AlignmentGeometry alignment;
 
   const Logo({
     super.key,
@@ -18,6 +19,7 @@ class Logo extends ConsumerWidget {
     this.width,
     this.height,
     this.mode,
+    this.alignment = Alignment.center,
   });
 
   @override
@@ -31,6 +33,7 @@ class Logo extends ConsumerWidget {
     if (!full) {
       return Image.asset(
         "assets/images/logo/logo_mini.png",
+        alignment: alignment,
         fit: fit,
         width: width,
         height: height,
@@ -38,6 +41,7 @@ class Logo extends ConsumerWidget {
     } else if (mode != null) {
       return Image.asset(
         "assets/images/logo/logo_full_${mode!.name}.png",
+        alignment: alignment,
         fit: fit,
         width: width,
         height: height,
@@ -45,6 +49,7 @@ class Logo extends ConsumerWidget {
     }
 
     return Image.asset(
+      alignment: alignment,
       "assets/images/logo/logo_full_${themeMode.name}.png",
       fit: fit,
       width: width,

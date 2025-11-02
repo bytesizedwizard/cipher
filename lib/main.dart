@@ -124,6 +124,9 @@ class CipherApp extends ConsumerWidget {
               actionTextColor: palette.primary,
               behavior: SnackBarBehavior.floating,
             ),
+            iconButtonTheme: IconButtonThemeData(
+              style: IconButton.styleFrom(foregroundColor: palette.font),
+            ),
           ),
           themeMode: settings.themeMode,
           routerConfig: router,
