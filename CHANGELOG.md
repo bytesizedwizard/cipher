@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.1+1] - 2025-11-02
+
+### Added
+- Interactive How-To guide with step-by-step tutorial
+- In-app tutorial with visual guides and explanations
+- Help button in home screen for quick tutorial access
+- Seven comprehensive tutorial steps with screenshots
+- Enhanced user onboarding experience
+
+### Security
+- No security-sensitive changes; tutorial feature is UI-only
+- All tutorial assets are bundled with the app (no external resources)
+
 ## [0.2.0+5] - 2025-11-02
 
 ### Changed
