@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0+5] - 2025-11-02
+
+### Changed
+- Reworked Settings screen layout: Backup & Recovery and Recovery Codes sections reorganized
+- Added a Recovery Codes tile (marked "Coming Soon") and Import/Export placeholders for future backup features
+- Disabled actions for "Coming Soon" items to avoid user confusion and accidental navigation
+- Small UI spacing and accessibility improvements across Settings (gap adjustments, consistent dividers)
+
+### Security
+- No security-sensitive behavior changed. No secrets exposed by UI-only updates.
+
 ## [0.2.0+4] - 2025-10-31
 
 ### Added
