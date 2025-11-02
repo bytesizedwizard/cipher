@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.1+7] - 2025-11-02
+
+### Added
+- User-friendly error dialog for QR scanner issues
+- App lifecycle state management in scanner
+- Enhanced error handling with detailed messages
+
+### Fixed
+- QR code scanning reliability improved with better detection area
+- Fixed URI parsing for accounts with different issuer values
+
+### Security
+- Maintained security while improving QR code compatibility
+- No changes to cryptographic or secret storage functionality
+
+### Version Note
+- Version jump from 0.2.1 to 0.3.1 to correctly reflect feature additions:
+  - 0.2.0 → 0.3.0: Addition of tutorial feature
+  - 0.3.0 → 0.3.1: New scanner features and improvements
+
+## [0.2.1+6] - 2025-11-02 (Renamed to 0.3.0+6)
+
+### Fixed
+- QR code scanning reliability improved with better detection area
+- Enhanced error handling in QR scanner with user-friendly dialogs
+- Fixed URI parsing for accounts with different issuer values
+- Improved app lifecycle management in scanner
+
+### Security
+- Maintained security while improving QR code compatibility
+- No changes to cryptographic or secret storage functionality
+
 ## [0.2.1+6] - 2025-11-02
 
 ### Added
