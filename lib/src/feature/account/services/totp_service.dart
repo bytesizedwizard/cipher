@@ -125,11 +125,6 @@ class TotpService {
         code: ErrorCode.invalidCredentials,
         message: AuthErrorMessages.entityParseError,
       );
-    } else if (issuer.isNotEmpty && issuer != label) {
-      throw ParseException(
-        code: ErrorCode.invalidCredentials,
-        message: AuthErrorMessages.entityParseError,
-      );
     } else if (digits <= 0 || period <= 0) {
       throw ParseException(
         code: ErrorCode.invalidCredentials,
