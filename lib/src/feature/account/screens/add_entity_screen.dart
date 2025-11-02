@@ -75,7 +75,6 @@ class _AddEntityScreenState extends ConsumerState<AddEntityScreen> {
                   height: 350,
                   child: MobileScanner(
                     tapToFocus: true,
-                    scanWindow: Rect.fromLTRB(50, 50, 50, 50),
                     controller: _controller!,
                     overlayBuilder: (context, constraints) {
                       return SizedBox(
@@ -223,6 +222,33 @@ class _AddEntityScreenState extends ConsumerState<AddEntityScreen> {
                       );
                     },
                     fit: BoxFit.cover,
+                    useAppLifecycleState: true,
+                    onDetectError: (error, stackTrace) {
+                      showDialog(
+                        context: context,
+                        builder: (context) {
+                          return AlertDialog(
+                            title: Text(
+                              "Scanner Error",
+                              style: textStyles.heading3,
+                            ),
+                            content: Text(
+                              "An error occurred while scanning: $error",
+                              style: textStyles.body,
+                            ),
+                            actions: [
+                              SemanticTextButton(
+                                label: "Close",
+                                onPressed: () {
+                                  context.pop();
+                                },
+                                semanticLabel: "Close error dialog",
+                              ),
+                            ],
+                          );
+                        },
+                      );
+                    },
                     onDetect: (result) {
                       final keyUri = result.barcodes.first.rawValue;
                       if (keyUri != null &&
