@@ -97,11 +97,63 @@ class SettingsScreen extends ConsumerWidget {
                     palette: palette,
                     textStyles: textStyles,
                   ),
+                  const Divider(height: 0),
+                  _buildSettingsTile(
+                    leading: Icons.security,
+                    title: const Text("Recovery Codes"),
+                    onTap: () {
+                      context.push(
+                        "/settings/update",
+                        extra: SettingsOption.recoveryCodes,
+                      );
+                    },
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.only(
+                        bottomLeft: Radius.circular(8.0),
+                        bottomRight: Radius.circular(8.0),
+                      ),
+                    ),
+                    palette: palette,
+                    textStyles: textStyles,
+                    isComingSoon: true,
+                  ),
+                ],
+                textStyles: textStyles,
+                palette: palette,
+              ),
+              const Gap(20),
+              ..._buildSettingsSection(
+                title: "Backup & Recovery",
+                children: [
+                  _buildSettingsTile(
+                    leading: Icons.import_export,
+                    title: const Text("Import / Export Data"),
+                    onTap: () {
+                      context.push(
+                        "/settings/update",
+                        extra: SettingsOption.importData,
+                      );
+                    },
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.only(
+                        topLeft: Radius.circular(8.0),
+                        topRight: Radius.circular(8.0),
+                      ),
+                    ),
+                    palette: palette,
+                    textStyles: textStyles,
+                    isComingSoon: true,
+                  ),
                   // const Divider(height: 0),
                   // _buildSettingsTile(
-                  //   leading: Icons.security,
-                  //   title: const Text("Recovery Codes"),
-                  //   onTap: () {},
+                  //   leading: Icons.upload,
+                  //   title: const Text("Export Data"),
+                  //   onTap: () {
+                  //     context.push(
+                  //       "/settings/update",
+                  //       extra: SettingsOption.exportData,
+                  //     );
+                  //   },
                   //   shape: RoundedRectangleBorder(
                   //     borderRadius: BorderRadius.only(
                   //       bottomLeft: Radius.circular(8.0),
@@ -110,56 +162,12 @@ class SettingsScreen extends ConsumerWidget {
                   //   ),
                   //   palette: palette,
                   //   textStyles: textStyles,
+                  //   isComingSoon: true,
                   // ),
                 ],
                 textStyles: textStyles,
                 palette: palette,
               ),
-              // const Gap(20),
-              // ..._buildSettingsSection(
-              //   title: "Backup & Recovery",
-              //   children: [
-              //     _buildSettingsTile(
-              //       leading: Icons.file_download,
-              //       title: const Text("Import Data"),
-              //       onTap: () {
-              //         context.push(
-              //           "/settings/update",
-              //           extra: SettingsOption.importData,
-              //         );
-              //       },
-              //       shape: RoundedRectangleBorder(
-              //         borderRadius: BorderRadius.only(
-              //           topLeft: Radius.circular(8.0),
-              //           topRight: Radius.circular(8.0),
-              //         ),
-              //       ),
-              //       palette: palette,
-              //       textStyles: textStyles,
-              //     ),
-              //     const Divider(height: 0),
-              //     _buildSettingsTile(
-              //       leading: Icons.import_export,
-              //       title: const Text("Export Data"),
-              //       onTap: () {
-              //         context.push(
-              //           "/settings/update",
-              //           extra: SettingsOption.exportData,
-              //         );
-              //       },
-              //       shape: RoundedRectangleBorder(
-              //         borderRadius: BorderRadius.only(
-              //           bottomLeft: Radius.circular(8.0),
-              //           bottomRight: Radius.circular(8.0),
-              //         ),
-              //       ),
-              //       palette: palette,
-              //       textStyles: textStyles,
-              //     ),
-              //   ],
-              //   textStyles: textStyles,
-              //   palette: palette,
-              // ),
               const Gap(20),
               ..._buildSettingsSection(
                 title: "Privacy & Usage",
@@ -195,12 +203,13 @@ class SettingsScreen extends ConsumerWidget {
                   ),
                 ],
               ),
-              const Gap(60),
+              const Gap(40),
               ..._buildAboutSection(
                 context,
                 textStyles: textStyles,
                 palette: palette,
               ),
+              const Gap(40),
             ],
           ),
         ),
@@ -241,6 +250,7 @@ class SettingsScreen extends ConsumerWidget {
     required ColorPalette palette,
     ShapeBorder? shape,
     bool isExperimental = false,
+    bool isComingSoon = false,
   }) {
     return ListTile(
       leadingAndTrailingTextStyle: textStyles.heading3.copyWith(fontSize: 21),
@@ -253,7 +263,7 @@ class SettingsScreen extends ConsumerWidget {
       shape:
           shape ??
           RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
-      onTap: onTap,
+      onTap: isComingSoon ? null : onTap,
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -278,8 +288,31 @@ class SettingsScreen extends ConsumerWidget {
                   ),
                 ),
               ),
+            )
+          else if (isComingSoon)
+            Padding(
+              padding: const EdgeInsets.only(right: 8.0),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 6.0,
+                  vertical: 2.0,
+                ),
+                decoration: BoxDecoration(
+                  color: palette.accent.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(4.0),
+                ),
+                child: Text(
+                  "COMING SOON",
+                  style: textStyles.label.copyWith(
+                    color: palette.accent,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
             ),
-          const Icon(Icons.chevron_right, size: 21),
+
+          if (!isComingSoon) const Icon(Icons.chevron_right, size: 21),
         ],
       ),
     );
@@ -565,6 +598,10 @@ class UpdateSettingScreen extends ConsumerWidget {
             },
           ),
         ];
+      case SettingsOption.recoveryCodes:
+      case SettingsOption.importData:
+      case SettingsOption.exportData:
+        return [];
       default:
         return [
           Padding(
