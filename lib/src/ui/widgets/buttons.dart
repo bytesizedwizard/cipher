@@ -151,6 +151,7 @@ class SemanticElevatedButton extends ConsumerWidget {
     this.padding = const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14.0),
     this.elevation = 2.0,
     this.border,
+    this.disabledColor,
   });
 
   final String label;
@@ -158,6 +159,7 @@ class SemanticElevatedButton extends ConsumerWidget {
   final String semanticLabel;
   final Widget? icon;
   final Color? buttonColor;
+  final Color? disabledColor;
   final Color? labelColor;
   final Color? iconColor;
   final double iconSize;
@@ -178,6 +180,7 @@ class SemanticElevatedButton extends ConsumerWidget {
         style: ElevatedButton.styleFrom(
           backgroundColor: buttonColor ?? palette.accent,
           foregroundColor: labelColor ?? palette.primary,
+          disabledBackgroundColor: disabledColor ?? palette.border,
           padding: padding,
           elevation: elevation,
           shape: RoundedRectangleBorder(
