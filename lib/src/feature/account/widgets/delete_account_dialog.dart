@@ -83,16 +83,18 @@ class DeleteAccountDialog extends HookConsumerWidget {
               buttonColor: colors.error,
               labelColor: colors.fromHex('#FFFFFF'),
               onPressed: canSubmit.value
-                  ? () {
+                  ? () async {
                       if (formKey.currentState!.validate()) {
                         // Proceed with account deletion
-                        ref
+                        await ref
                             .read(authControllerProvider.notifier)
                             .deleteAccount(id);
 
-                        context.go(
-                          '/home',
-                        ); // Navigate to home or appropriate screen
+                        if (context.mounted) {
+                          context.go(
+                            '/home',
+                          ); // Navigate to home or appropriate screen
+                        }
                       }
                     }
                   : null,

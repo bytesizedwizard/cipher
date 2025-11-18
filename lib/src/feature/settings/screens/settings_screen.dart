@@ -34,7 +34,9 @@ class SettingsScreen extends ConsumerWidget {
       ),
       bottomNavigationBar: const BottomBar(),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {},
+        onPressed: () {
+          context.push("/auth/add");
+        },
         child: const Icon(Icons.add),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,

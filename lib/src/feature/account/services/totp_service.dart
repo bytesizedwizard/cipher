@@ -105,8 +105,10 @@ class TotpService {
         ? parsed.pathSegments[0]
         : '';
 
-    String label = rawLabel.contains(':') ? rawLabel.split(':')[0] : rawLabel;
-    String accountName = rawLabel.contains(':') ? rawLabel.split(':')[1] : '';
+    String label = rawLabel.contains(':') ? rawLabel.split(':')[0] : '';
+    String accountName = rawLabel.contains(':')
+        ? rawLabel.split(':')[1]
+        : rawLabel;
 
     String secret = parsed.queryParameters['secret'] ?? '';
     String issuer = parsed.queryParameters['issuer'] ?? '';
@@ -120,7 +122,7 @@ class TotpService {
         AuthConstants.defaultPeriod;
     String type = parsed.host;
 
-    if (label.isEmpty || secret.isEmpty || accountName.isEmpty) {
+    if (secret.isEmpty || accountName.isEmpty) {
       throw ParseException(
         code: ErrorCode.invalidCredentials,
         message: AuthErrorMessages.entityParseError,

@@ -99,7 +99,7 @@ class ViewAccountScreen extends ConsumerWidget {
                 icon: const Icon(Symbols.delete),
                 buttonColor: colors.error,
                 elevation: 0,
-                labelColor: colors.primary,
+                labelColor: colors.fromHex("#FFFFFF"),
                 iconColor: colors.fromHex('#FFFFFF'),
                 border: BorderSide(color: colors.border, width: 1),
                 label: "Delete Account",

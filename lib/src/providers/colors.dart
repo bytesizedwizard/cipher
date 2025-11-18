@@ -64,7 +64,7 @@ class DarkPalette implements ColorPalette {
   Color get border => const Color.fromARGB(255, 82, 82, 82);
 
   @override
-  Color get error => const Color(0xFFCF6679);
+  Color get error => const Color.fromARGB(255, 209, 36, 67);
 
   @override
   Color get warning => const Color(0xFFFFA000);
