@@ -1,4 +1,4 @@
-import 'package:cipher/src/feature/account/screens/add_entity_screen.dart';
+import 'package:cipher/src/feature/account/screens/add_account_screen.dart';
 import 'package:cipher/src/feature/account/screens/view_account_screen.dart';
 import 'package:cipher/src/feature/home/screens/home_screen.dart';
 import 'package:cipher/src/feature/home/screens/how_to_screen.dart';

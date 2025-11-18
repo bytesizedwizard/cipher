@@ -1,7 +1,9 @@
 import 'package:base32/base32.dart';
 import 'package:cipher/src/feature/account/models/auth_models.dart';
+import 'package:cipher/src/feature/account/models/errors.dart';
 import 'package:cipher/src/feature/account/providers/auth_providers.dart';
 import 'package:cipher/src/feature/account/utils/constants.dart';
+import 'package:cipher/src/feature/account/widgets/add_account_error_dialog.dart';
 import 'package:cipher/src/providers/colors.dart';
 import 'package:cipher/src/providers/styles.dart';
 import 'package:cipher/src/ui/widgets/app_bar.dart';
@@ -249,25 +251,44 @@ class _AddEntityScreenState extends ConsumerState<AddEntityScreen> {
                         },
                       );
                     },
-                    onDetect: (result) {
+                    onDetect: (result) async {
                       final keyUri = result.barcodes.first.rawValue;
                       if (keyUri != null &&
                           keyUri.startsWith(AuthConstants.uriScheme)) {
-                        ref
-                            .read(authControllerProvider.notifier)
-                            .addAccountFromUri(keyUri);
+                        try {
+                          await ref
+                              .read(authControllerProvider.notifier)
+                              .addAccountFromUri(keyUri);
 
-                        if (context.canPop()) context.pop();
+                          if (context.mounted) {
+                            context.go("/home");
+                          }
+                        } on ParseException catch (e) {
+                          if (context.mounted) {
+                            showDialog(
+                              context: context,
+                              builder: (context) {
+                                return AddAccountErrorDialog(error: e);
+                              },
+                            ).then((_) {
+                              if (context.mounted) {
+                                context.pop();
+                              }
+                            });
+                          }
+                        }
                       } else {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text(
                               "Scanned code is not valid. Please try again.",
                               style: textStyles.body.copyWith(
-                                color: palette.primary,
+                                color: palette.fromHex("#FFFFFF"),
+                                backgroundColor: palette.error,
                               ),
                             ),
                             backgroundColor: palette.error,
+                            duration: const Duration(seconds: 3),
                           ),
                         );
                       }
