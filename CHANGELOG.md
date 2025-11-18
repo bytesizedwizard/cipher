@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.2+8] - 2025-11-18
+
+### Added
+- Dedicated error dialog for QR code scan failures with detailed error information
+- Enhanced error handling in QR scanner with try-catch blocks
+- Button disabled state customization (`disabledColor` property)
+
+### Fixed
+- Async navigation bug in delete account dialog (added context.mounted check)
+- URI parsing now handles flexible issuer/label combinations
+- Delete button text color for better dark theme visibility
+- Non-functional floating action button in settings screen
+- Dark theme error color improved for better contrast
+
+### Changed
+- Renamed `add_entity_screen.dart` to `add_account_screen.dart` for clarity
+- Updated iOS build configuration with automatic code signing
+- Added bundle display name "Cipher" for iOS
+
+### Security
+- No security-sensitive changes
+- Improved error handling maintains security boundaries
+
 ## [0.3.1+7] - 2025-11-02
 
 ### Added
