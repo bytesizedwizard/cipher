@@ -56,6 +56,7 @@ class _AddEntityScreenState extends ConsumerState<AddEntityScreen> {
 
     final formKey = useMemoized(() => GlobalKey<FormState>());
     final ObjectRef<Map<String, String>> accountDetails = useRef({});
+    final isScanning = useRef(false);
 
     return Scaffold(
       appBar: BaseAppBar(
@@ -252,6 +253,10 @@ class _AddEntityScreenState extends ConsumerState<AddEntityScreen> {
                       );
                     },
                     onDetect: (result) async {
+                      if (isScanning.value) return;
+                      if (result.barcodes.isEmpty) return;
+                      isScanning.value = true;
+
                       final keyUri = result.barcodes.first.rawValue;
                       if (keyUri != null &&
                           keyUri.startsWith(AuthConstants.uriScheme)) {
@@ -264,31 +269,42 @@ class _AddEntityScreenState extends ConsumerState<AddEntityScreen> {
                             context.go("/home");
                           }
                         } on ParseException catch (e) {
+                          isScanning.value = false;
                           if (context.mounted) {
-                            showDialog(
+                            await showDialog(
                               context: context,
                               builder: (context) {
                                 return AddAccountErrorDialog(error: e);
                               },
-                            ).then((_) {
-                              if (context.mounted) {
-                                context.pop();
-                              }
-                            });
+                            );
+                          }
+                        } catch (_) {
+                          isScanning.value = false;
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                backgroundColor: palette.error,
+                                content: Text(
+                                  "Invalid code format.",
+                                  style: textStyles.body.copyWith(
+                                    color: palette.fromHex("#FFFFFF"),
+                                  ),
+                                ),
+                              ),
+                            );
                           }
                         }
                       } else {
+                        isScanning.value = false;
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
+                            backgroundColor: palette.error,
                             content: Text(
-                              "Scanned code is not valid. Please try again.",
+                              "Scanned code is not valid.",
                               style: textStyles.body.copyWith(
                                 color: palette.fromHex("#FFFFFF"),
-                                backgroundColor: palette.error,
                               ),
                             ),
-                            backgroundColor: palette.error,
-                            duration: const Duration(seconds: 3),
                           ),
                         );
                       }
@@ -381,7 +397,9 @@ class _AddEntityScreenState extends ConsumerState<AddEntityScreen> {
                               .read(authControllerProvider.notifier)
                               .addAccount(account, secret);
 
-                          context.pop();
+                          if (context.mounted) {
+                            context.pop();
+                          }
                         }
                       },
                       semanticLabel: "Add new account",

@@ -127,7 +127,19 @@ class TotpService {
         code: ErrorCode.invalidCredentials,
         message: AuthErrorMessages.entityParseError,
       );
-    } else if (digits <= 0 || period <= 0) {
+    }
+
+    // validate the secret is parseable as base32
+    try {
+      decodeBase32Secret(secret);
+    } catch (_) {
+      throw ParseException(
+        code: ErrorCode.invalidCredentials,
+        message: AuthErrorMessages.entityParseError,
+      );
+    }
+
+    if (digits <= 0 || period <= 0) {
       throw ParseException(
         code: ErrorCode.invalidCredentials,
         message: AuthErrorMessages.entityParseError,
