@@ -197,6 +197,34 @@ class HomeScreen extends HookConsumerWidget {
     );
   }
 
+  /// Sort accounts by the given [field].
+  ///
+  /// Date-added sorts are approximated by insertion order (no timestamp field).
+  /// Items from [AuthController] are returned in insertion order (oldest first).
+  List<AccountView> _sortAccounts(
+    Iterable<AccountView> items,
+    AccountSortField field,
+  ) {
+    final list = items.toList();
+    switch (field) {
+      case AccountSortField.issuer:
+        list.sort((a, b) => a.account.issuer
+            .toLowerCase()
+            .compareTo(b.account.issuer.toLowerCase()));
+      case AccountSortField.label:
+        list.sort(
+          (a, b) => a.account.accountName
+              .toLowerCase()
+              .compareTo(b.account.accountName.toLowerCase()),
+        );
+      case AccountSortField.dateAddedNewest:
+        return list.reversed.toList();
+      case AccountSortField.dateAddedOldest:
+        break;
+    }
+    return list;
+  }
+
   Widget _buildAccountList(
     BuildContext context,
     Iterable<AccountView> items,
@@ -209,8 +237,9 @@ class HomeScreen extends HookConsumerWidget {
           children: [
             for (final item in items) ...[
               ListTile(
+                leading: IssuerLogo(issuer: item.account.issuer, size: 28, circular: false),
                 title: Text(item.account.issuer),
-                titleTextStyle: textStyle.heading3,
+                titleTextStyle: textStyle.body.copyWith(fontWeight: FontWeight.w600),
                 contentPadding: const EdgeInsets.symmetric(horizontal: 20),
                 isThreeLine: false,
                 onTap: () {
@@ -246,8 +275,8 @@ class HomeScreen extends HookConsumerWidget {
                     Text(
                       item.otp,
                       style: textStyle.heading1.copyWith(
-                        fontSize: 32,
-                        height: 1.5,
+                        fontSize: 24,
+                        height: 1.4,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -261,7 +290,7 @@ class HomeScreen extends HookConsumerWidget {
                   ],
                 ),
                 style: ListTileStyle.list,
-                horizontalTitleGap: 10,
+                horizontalTitleGap: 14,
                 trailing: CircularTimer(
                   secondsLeft: item.secondsLeft,
                   totalSeconds: AuthConstants.defaultPeriod,
