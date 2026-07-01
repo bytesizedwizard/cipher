@@ -99,26 +99,6 @@ class SettingsScreen extends ConsumerWidget {
                     palette: palette,
                     textStyles: textStyles,
                   ),
-                  const Divider(height: 0),
-                  _buildSettingsTile(
-                    leading: Icons.security,
-                    title: const Text("Recovery Codes"),
-                    onTap: () {
-                      context.push(
-                        "/settings/update",
-                        extra: SettingsOption.recoveryCodes,
-                      );
-                    },
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.only(
-                        bottomLeft: Radius.circular(8.0),
-                        bottomRight: Radius.circular(8.0),
-                      ),
-                    ),
-                    palette: palette,
-                    textStyles: textStyles,
-                    isComingSoon: true,
-                  ),
                 ],
                 textStyles: textStyles,
                 palette: palette,

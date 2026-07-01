@@ -7,7 +7,6 @@ abstract class SettingsConstants {
     SettingsOption.theme: "Theme",
     SettingsOption.biometricAuth: "Biometric Authentication",
     SettingsOption.clipboardTimeout: "Clipboard Timeout",
-    SettingsOption.recoveryCodes: "Recovery Codes",
     SettingsOption.importData: "Import Data",
     SettingsOption.exportData: "Export Data",
     SettingsOption.openSourceLicenses: "Open Source Licenses",
