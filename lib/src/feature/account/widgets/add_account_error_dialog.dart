@@ -18,7 +18,7 @@ class AddAccountErrorDialog extends HookConsumerWidget {
 
     return AlertDialog(
       elevation: 10,
-      shadowColor: colors.primary.withOpacity(0.5),
+      shadowColor: colors.primary.withValues(alpha: 0.5),
       backgroundColor: colors.primary,
       title: Row(
         children: [
