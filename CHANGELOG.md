@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0+9] - 2026-07-01
+
+### Added
+- Account sorting by issuer, label, and date added (sort picker in home screen toolbar)
+- IssuerLogo widget with brand SVGs for 43 services (Apple, Google, GitHub, Discord, etc.)
+- Display IssuerLogo in account list tiles and view account screen
+- CustomPaint arc timer replacing CircularProgressIndicator
+- Base32 secret validation during QR code parsing to catch invalid secrets early
+- Design document (DESIGN.md) with UI/UX guidelines
+
+### Fixed
+- QR scan flow edge-case crashes (double-scan guard, mounted checks, navigation fixes)
+- Deprecated `withOpacity` replaced with `withValues(alpha:)` across codebase
+
+### Changed
+- OTP font size reduced from 32 to 24 for better list layout
+- Account list title weight increased to w600
+- Timer turns red when ≤5 seconds remaining
+- SemanticRadioButtonGroup padding default changed to 0
+
 ## [0.3.2+8] - 2025-11-18
 
 ### Added
