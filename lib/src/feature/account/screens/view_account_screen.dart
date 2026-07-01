@@ -1,6 +1,7 @@
 import 'package:cipher/src/feature/account/providers/auth_providers.dart';
 import 'package:cipher/src/feature/account/utils/constants.dart';
 import 'package:cipher/src/feature/account/widgets/delete_account_dialog.dart';
+import 'package:cipher/src/feature/account/widgets/issuer_logo.dart';
 import 'package:cipher/src/providers/colors.dart';
 import 'package:cipher/src/providers/styles.dart';
 import 'package:cipher/src/ui/widgets/app_bar.dart';
@@ -43,6 +44,16 @@ class ViewAccountScreen extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    Center(
+                      child: Padding(
+                        padding: const EdgeInsets.only(top: 16),
+                        child: IssuerLogo(
+                          issuer: item.account.issuer,
+                          size: 48,
+                        ),
+                      ),
+                    ),
+                    const Gap(12),
                     _itemTile(
                       "Issuer",
                       item.account.issuer.isEmpty ? "N/A" : item.account.issuer,
