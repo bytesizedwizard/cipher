@@ -1,3 +1,4 @@
+import 'package:cipher/src/feature/account/utils/constants.dart';
 import 'package:cipher/src/feature/settings/utils/constants.dart';
 import 'package:flutter/material.dart' show ThemeMode;
 import 'package:freezed_annotation/freezed_annotation.dart';
@@ -35,14 +36,25 @@ class Settings with _$Settings {
   final bool biometricAuthEnabled;
 
   @override
-  @JsonKey(name: 'do_not_show_beta_disclaimer', defaultValue: false)
+  @JsonKey(
+    name: 'do_not_show_beta_disclaimer',
+    defaultValue: false,
+  )
   final bool doNotShowBetaDisclaimer;
+
+  @override
+  @JsonKey(
+    name: 'sort_field',
+    defaultValue: AccountSortField.dateAddedNewest,
+  )
+  final AccountSortField sortField;
 
   const Settings({
     required this.themeMode,
     required this.clipboardTimeout,
     required this.biometricAuthEnabled,
     this.doNotShowBetaDisclaimer = false,
+    this.sortField = AccountSortField.dateAddedNewest,
   });
 
   factory Settings.fromJson(Map<String, Object?> json) =>

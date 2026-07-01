@@ -289,7 +289,7 @@ class SemanticRadioButtonGroup<T> extends ConsumerWidget {
     required this.groupValue,
     required this.onChanged,
     this.semanticLabel,
-    this.padding = const EdgeInsets.symmetric(horizontal: 25.0),
+    this.padding = const EdgeInsets.symmetric(horizontal: 0.0),
   });
 
   final List<RadioButtonOption> options;

@@ -1,3 +1,5 @@
+import 'package:json_annotation/json_annotation.dart';
+
 abstract class AuthConstants {
   static const String totp = 'totp';
   static const String hotp = 'hotp';
@@ -11,6 +13,48 @@ abstract class AuthConstants {
   static const String algorithmSHA1 = 'SHA1';
   static const String algorithmSHA256 = 'SHA256';
   static const String algorithmSHA512 = 'SHA512';
+}
+
+/// Sort fields for ordering accounts on home screen.
+///
+/// Default is [dateAddedNewest] for backward-compatible behavior.
+enum AccountSortField {
+  @JsonValue('issuer')
+  issuer,
+  @JsonValue('label')
+  label,
+  @JsonValue('date_added_newest')
+  dateAddedNewest,
+  @JsonValue('date_added_oldest')
+  dateAddedOldest,
+}
+
+extension AccountSortFieldX on AccountSortField {
+  String get displayName {
+    switch (this) {
+      case AccountSortField.issuer:
+        return 'Issuer (A-Z)';
+      case AccountSortField.label:
+        return 'Account Name (A-Z)';
+      case AccountSortField.dateAddedNewest:
+        return 'Date Added (Newest)';
+      case AccountSortField.dateAddedOldest:
+        return 'Date Added (Oldest)';
+    }
+  }
+
+  String get description {
+    switch (this) {
+      case AccountSortField.issuer:
+        return 'Alphabetical by service or company name';
+      case AccountSortField.label:
+        return 'Alphabetical by account username';
+      case AccountSortField.dateAddedNewest:
+        return 'Most recently added accounts first';
+      case AccountSortField.dateAddedOldest:
+        return 'Earliest added accounts first';
+    }
+  }
 }
 
 abstract class AuthErrorMessages {

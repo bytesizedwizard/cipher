@@ -30,6 +30,15 @@ class HomeScreen extends HookConsumerWidget {
     final textStyle = ref.watch(textStyleProvider);
 
     final items = ref.watch(authControllerProvider).values;
+    final settings = ref.watch(settingsControllerProvider);
+
+    // Sort accounts based on current sort field
+    final sortField =
+        settings.maybeWhen(
+          orElse: () => AccountSortField.dateAddedNewest,
+          loaded: (s) => s.sortField,
+        );
+    final sortedItems = _sortAccounts(items, sortField);
 
     final searchInput = useState<String?>(null);
 
@@ -37,8 +46,6 @@ class HomeScreen extends HookConsumerWidget {
       searchInput.value,
       const Duration(milliseconds: 300),
     );
-
-    final settings = ref.watch(settingsControllerProvider);
 
     useEffect(() {
       ref
@@ -83,6 +90,25 @@ class HomeScreen extends HookConsumerWidget {
         elevation: 0,
         actions: [
           Padding(
+            padding: const EdgeInsets.only(right: 4.0),
+            child: FlatIconButton(
+              icon: const Icon(Symbols.sort),
+              onPressed: () {
+                showModalBottomSheet(
+                  context: context,
+                  builder: (context) {
+                    return const SortPickerSheet();
+                  },
+                  backgroundColor: palette.primary,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                );
+              },
+              tooltip: "Sort accounts",
+            ),
+          ),
+          Padding(
             padding: const EdgeInsets.only(right: 8.0),
             child: FlatIconButton(
               icon: Icon(Symbols.help),
@@ -122,7 +148,7 @@ class HomeScreen extends HookConsumerWidget {
           thickness: 0,
           thumbVisibility: false,
           trackVisibility: false,
-          child: items.isEmpty
+          child: sortedItems.isEmpty
               ? Center(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 40.0),
@@ -157,7 +183,7 @@ class HomeScreen extends HookConsumerWidget {
                     ),
                   ),
                 )
-              : _buildAccountList(context, items, textStyle, palette),
+              : _buildAccountList(context, sortedItems, textStyle, palette),
         ),
       ),
       bottomNavigationBar: BottomBar(),

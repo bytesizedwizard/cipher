@@ -14,6 +14,9 @@ Settings _$SettingsFromJson(Map<String, dynamic> json) => Settings(
   biometricAuthEnabled: json['biometric_auth_enabled'] as bool? ?? false,
   doNotShowBetaDisclaimer:
       json['do_not_show_beta_disclaimer'] as bool? ?? false,
+  sortField:
+      $enumDecodeNullable(_$AccountSortFieldEnumMap, json['sort_field']) ??
+      AccountSortField.dateAddedNewest,
 );
 
 Map<String, dynamic> _$SettingsToJson(Settings instance) => <String, dynamic>{
@@ -21,10 +24,18 @@ Map<String, dynamic> _$SettingsToJson(Settings instance) => <String, dynamic>{
   'clipboard_timeout': instance.clipboardTimeout,
   'biometric_auth_enabled': instance.biometricAuthEnabled,
   'do_not_show_beta_disclaimer': instance.doNotShowBetaDisclaimer,
+  'sort_field': _$AccountSortFieldEnumMap[instance.sortField]!,
 };
 
 const _$ThemeModeEnumMap = {
   ThemeMode.system: 'system',
   ThemeMode.light: 'light',
   ThemeMode.dark: 'dark',
+};
+
+const _$AccountSortFieldEnumMap = {
+  AccountSortField.issuer: 'issuer',
+  AccountSortField.label: 'label',
+  AccountSortField.dateAddedNewest: 'date_added_newest',
+  AccountSortField.dateAddedOldest: 'date_added_oldest',
 };

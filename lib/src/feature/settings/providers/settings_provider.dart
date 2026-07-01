@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:cipher/src/feature/account/utils/constants.dart';
 import 'package:cipher/src/feature/account/services/storage_service.dart';
 import 'package:cipher/src/feature/settings/models/settings_models.dart';
 import 'package:cipher/src/feature/settings/utils/constants.dart';
@@ -121,6 +122,16 @@ class SettingsController extends _$SettingsController {
     state.whenOrNull(
       loaded: (settings) {
         final updated = settings.copyWith(doNotShowBetaDisclaimer: true);
+        state = SettingsState.loaded(updated);
+        saveSettings(updated);
+      },
+    );
+  }
+
+  Future<void> setSortField(AccountSortField field) async {
+    state.whenOrNull(
+      loaded: (settings) {
+        final updated = settings.copyWith(sortField: field);
         state = SettingsState.loaded(updated);
         saveSettings(updated);
       },
