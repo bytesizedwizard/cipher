@@ -28,8 +28,7 @@ Global: `lib/src/providers/` (ColorPalette, platform), `lib/src/ui/` (reusable w
 ```
 Input → TotpService.decode() → (Account, secret)
   → AuthService.addAccount()
-    → SharedPrefs (metadata)
-    → FlutterSecureStorage (base64 secret)
+    → FlutterSecureStorage (versioned account record + base64 secret)
   → AuthController.addAccount() → refresh state
 
 AuthController._tick() [1s]:
@@ -53,9 +52,10 @@ AuthController._tick() [1s]:
 ## Conventions (security-critical)
 
 - **Never log/print secrets.** Plain text forbidden.
-- Secrets → FlutterSecureStorage. Metadata → SharedPreferences.
-- Secret key: `"{issuer}:{label}_secret"` (base64-encoded value).
-- Delete removes from both backends.
+- Account records and secrets → FlutterSecureStorage.
+- SharedPreferences stores settings only; legacy split records migrate on startup.
+- Authoritative account key: `"account:${Uri.encodeComponent(issuer)}:${Uri.encodeComponent(label)}"`.
+- Delete removes authoritative and legacy records.
 - Use `StorageSource` enum (`secureStorage`/`sharedPreferences`).
 
 ### State
