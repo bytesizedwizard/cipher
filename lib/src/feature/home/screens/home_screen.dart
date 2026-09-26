@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:cipher/src/feature/account/providers/auth_providers.dart';
 import 'package:cipher/src/feature/account/utils/constants.dart';
 import 'package:cipher/src/feature/account/widgets/issuer_logo.dart';
 import 'package:cipher/src/feature/account/widgets/sort_picker.dart';
+import 'package:cipher/src/feature/account/models/errors.dart';
 import 'package:cipher/src/feature/settings/models/settings_models.dart';
 import 'package:cipher/src/feature/settings/providers/settings_provider.dart';
 import 'package:cipher/src/providers/colors.dart';
@@ -29,18 +32,18 @@ class HomeScreen extends HookConsumerWidget {
     final palette = ref.watch(colorPaletteProvider);
     final textStyle = ref.watch(textStyleProvider);
 
-    final items = ref.watch(authControllerProvider).values;
+    final accountState = ref.watch(authControllerProvider);
+    final items = accountState.valueOrNull?.values ?? const <AccountView>[];
     final settings = ref.watch(settingsControllerProvider);
 
     // Sort accounts based on current sort field
-    final sortField =
-        settings.maybeWhen(
-          orElse: () => AccountSortField.dateAddedNewest,
-          loaded: (s) => s.sortField,
-        );
+    final sortField = settings.maybeWhen(
+      orElse: () => AccountSortField.dateAddedNewest,
+      loaded: (s) => s.sortField,
+    );
     final sortedItems = _sortAccounts(items, sortField);
 
-    final searchInput = useState<String?>(null);
+    final searchInput = useState('');
 
     final debouncedSearchText = useDebounced(
       searchInput.value,
@@ -48,9 +51,12 @@ class HomeScreen extends HookConsumerWidget {
     );
 
     useEffect(() {
-      ref
-          .read(authControllerProvider.notifier)
-          .refreshAccounts(debouncedSearchText ?? '');
+      unawaited(
+        ref
+            .read(authControllerProvider.notifier)
+            .refreshAccounts(debouncedSearchText ?? '')
+            .catchError((_) {}),
+      );
 
       WidgetsBinding.instance.addPostFrameCallback((_) {
         settings.whenOrNull(
@@ -81,6 +87,14 @@ class HomeScreen extends HookConsumerWidget {
 
       return null;
     }, [debouncedSearchText]);
+
+    ref.listen(authControllerProvider, (previous, next) {
+      if (next.hasError && next.hasValue && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(_accountErrorMessage(next.error))),
+        );
+      }
+    });
 
     return Scaffold(
       appBar: BaseAppBar(
@@ -148,7 +162,20 @@ class HomeScreen extends HookConsumerWidget {
           thickness: 0,
           thumbVisibility: false,
           trackVisibility: false,
-          child: sortedItems.isEmpty
+          child: accountState.hasError && !accountState.hasValue
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 40.0),
+                    child: Text(
+                      _accountErrorMessage(accountState.error),
+                      style: textStyle.body,
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                )
+              : accountState.isLoading && !accountState.hasValue
+              ? Center(child: CircularProgressIndicator(color: palette.accent))
+              : sortedItems.isEmpty
               ? Center(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 40.0),
@@ -197,6 +224,13 @@ class HomeScreen extends HookConsumerWidget {
     );
   }
 
+  String _accountErrorMessage(Object? error) {
+    if (error is AccountStorageIssue) {
+      return error.message;
+    }
+    return 'Unable to load accounts.';
+  }
+
   /// Sort accounts by the given [field].
   ///
   /// Date-added sorts are approximated by insertion order (no timestamp field).
@@ -208,14 +242,16 @@ class HomeScreen extends HookConsumerWidget {
     final list = items.toList();
     switch (field) {
       case AccountSortField.issuer:
-        list.sort((a, b) => a.account.issuer
-            .toLowerCase()
-            .compareTo(b.account.issuer.toLowerCase()));
+        list.sort(
+          (a, b) => a.account.issuer.toLowerCase().compareTo(
+            b.account.issuer.toLowerCase(),
+          ),
+        );
       case AccountSortField.label:
         list.sort(
-          (a, b) => a.account.accountName
-              .toLowerCase()
-              .compareTo(b.account.accountName.toLowerCase()),
+          (a, b) => a.account.accountName.toLowerCase().compareTo(
+            b.account.accountName.toLowerCase(),
+          ),
         );
       case AccountSortField.dateAddedNewest:
         return list.reversed.toList();
@@ -237,9 +273,15 @@ class HomeScreen extends HookConsumerWidget {
           children: [
             for (final item in items) ...[
               ListTile(
-                leading: IssuerLogo(issuer: item.account.issuer, size: 28, circular: false),
+                leading: IssuerLogo(
+                  issuer: item.account.issuer,
+                  size: 28,
+                  circular: false,
+                ),
                 title: Text(item.account.issuer),
-                titleTextStyle: textStyle.body.copyWith(fontWeight: FontWeight.w600),
+                titleTextStyle: textStyle.body.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
                 contentPadding: const EdgeInsets.symmetric(horizontal: 20),
                 isThreeLine: false,
                 onTap: () {

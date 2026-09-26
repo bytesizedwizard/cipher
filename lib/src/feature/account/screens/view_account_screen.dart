@@ -1,4 +1,5 @@
 import 'package:cipher/src/feature/account/providers/auth_providers.dart';
+import 'package:cipher/src/feature/account/models/errors.dart';
 import 'package:cipher/src/feature/account/utils/constants.dart';
 import 'package:cipher/src/feature/account/widgets/delete_account_dialog.dart';
 import 'package:cipher/src/feature/account/widgets/issuer_logo.dart';
@@ -23,8 +24,26 @@ class ViewAccountScreen extends ConsumerWidget {
     final textStyles = ref.watch(textStyleProvider);
     final colors = ref.watch(colorPaletteProvider);
 
-    final items = ref.watch(authControllerProvider).values;
-    final item = items.firstWhere((element) => element.account.id == id);
+    final accountState = ref.watch(authControllerProvider);
+    final items = accountState.valueOrNull?.values ?? const <AccountView>[];
+    AccountView? item;
+    for (final candidate in items) {
+      if (candidate.account.id == id) {
+        item = candidate;
+        break;
+      }
+    }
+
+    final selectedItem = item;
+    if (selectedItem == null) {
+      return _statusScaffold(
+        context,
+        textStyles,
+        accountState.hasError
+            ? _accountErrorMessage(accountState.error)
+            : 'Account is not available.',
+      );
+    }
 
     return Scaffold(
       appBar: BaseAppBar(
@@ -48,7 +67,7 @@ class ViewAccountScreen extends ConsumerWidget {
                       child: Padding(
                         padding: const EdgeInsets.only(top: 16),
                         child: IssuerLogo(
-                          issuer: item.account.issuer,
+                          issuer: selectedItem.account.issuer,
                           size: 48,
                         ),
                       ),
@@ -56,7 +75,9 @@ class ViewAccountScreen extends ConsumerWidget {
                     const Gap(12),
                     _itemTile(
                       "Issuer",
-                      item.account.issuer.isEmpty ? "N/A" : item.account.issuer,
+                      selectedItem.account.issuer.isEmpty
+                          ? "N/A"
+                          : selectedItem.account.issuer,
                       textStyles.label,
                       textStyles.heading2,
                       colors,
@@ -64,7 +85,9 @@ class ViewAccountScreen extends ConsumerWidget {
                     const Gap(20),
                     _itemTile(
                       "Account Name",
-                      item.account.label.isEmpty ? "N/A" : item.account.label,
+                      selectedItem.account.label.isEmpty
+                          ? "N/A"
+                          : selectedItem.account.label,
                       textStyles.label,
                       textStyles.heading2,
                       colors,
@@ -72,14 +95,17 @@ class ViewAccountScreen extends ConsumerWidget {
                     const Gap(20),
                     _itemTile(
                       "Passcode",
-                      item.otp,
+                      selectedItem.otp,
                       textStyles.label,
                       textStyles.heading1.copyWith(fontSize: 32),
                       colors,
                     ),
                     const Gap(10),
                     LinearProgressIndicator(
-                      value: 1 - item.secondsLeft / AuthConstants.defaultPeriod,
+                      value:
+                          1 -
+                          selectedItem.secondsLeft /
+                              AuthConstants.defaultPeriod,
                       color: colors.accent,
                       backgroundColor: colors.accent.withValues(alpha: 0.1),
                     ),
@@ -98,7 +124,7 @@ class ViewAccountScreen extends ConsumerWidget {
                 label: "Copy Passcode",
                 onPressed: () {
                   // copy to clipboard
-                  Clipboard.setData(ClipboardData(text: item.otp));
+                  Clipboard.setData(ClipboardData(text: selectedItem.otp));
                   ScaffoldMessenger.of(
                     context,
                   ).showSnackBar(const SnackBar(content: Text('Copied')));
@@ -118,9 +144,7 @@ class ViewAccountScreen extends ConsumerWidget {
                   showDialog(
                     context: context,
                     builder: (context) {
-                      final String key =
-                          "${item.account.issuer}:${item.account.label}";
-                      return DeleteAccountDialog(id: key);
+                      return DeleteAccountDialog(id: selectedItem.account.id);
                     },
                   );
                 },
@@ -131,6 +155,34 @@ class ViewAccountScreen extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  Widget _statusScaffold(
+    BuildContext context,
+    Style textStyles,
+    String message,
+  ) {
+    return Scaffold(
+      appBar: BaseAppBar(
+        title: const Text("Account Details"),
+        titleTextStyle: textStyles.heading2,
+        titleSpacing: 0,
+      ),
+      body: Center(
+        child: Text(
+          message,
+          style: textStyles.body,
+          textAlign: TextAlign.center,
+        ),
+      ),
+    );
+  }
+
+  String _accountErrorMessage(Object? error) {
+    if (error is AccountStorageIssue) {
+      return error.message;
+    }
+    return 'Unable to load accounts.';
   }
 
   Widget _itemTile(

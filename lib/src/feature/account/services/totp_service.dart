@@ -1,10 +1,9 @@
-import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:base32/base32.dart';
 import 'package:cipher/src/feature/account/models/auth_models.dart';
 import 'package:cipher/src/feature/account/models/errors.dart';
-import 'package:cipher/src/feature/account/services/storage_service.dart';
+import 'package:cipher/src/feature/account/services/account_storage_service.dart';
 import 'package:cipher/src/feature/account/utils/constants.dart';
 import 'package:crypto/crypto.dart' as crypto;
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -13,10 +12,10 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 part 'totp_service.g.dart';
 
 class TotpService {
-  final StorageService _storageService;
+  TotpService({required AccountStorageService accountStorageService})
+    : _accountStorageService = accountStorageService;
 
-  TotpService({required StorageService storageService})
-    : _storageService = storageService;
+  final AccountStorageService _accountStorageService;
 
   Future<String> generateTotp({
     required String secret,
@@ -33,7 +32,6 @@ class TotpService {
 
     final counterBytes = _int64be(counter);
 
-    // HMAC
     final algo = algorithm.toUpperCase();
     List<int> hmacBytes;
     switch (algo) {
@@ -65,15 +63,8 @@ class TotpService {
     throw UnimplementedError(AuthErrorMessages.unimplementedError);
   }
 
-  /// Refreshes the OTP for a given account and returns the new OTP.
-  /// This method reads the secret from secure storage and generates a new OTP.
   Future<String> refresh(Account account) async {
-    String? encodedSecret = await _storageService.read(
-      '${account.issuer}:${account.label}_secret',
-      StorageSource.secureStorage,
-    );
-
-    final String secret = utf8.decode(base64Decode(encodedSecret ?? ''));
+    final secret = await _accountStorageService.readSecret(account);
 
     return await generateTotp(
       secret: secret,
@@ -83,8 +74,6 @@ class TotpService {
     );
   }
 
-  /// Parses a TOTP or HOTP URI and returns a tuple of (SecureEntity, secret).
-  /// Throws EntityParseException if the URI is invalid.
   (Account, String) decode(String uri) {
     Uri parsed = Uri.parse(uri);
 
@@ -129,7 +118,6 @@ class TotpService {
       );
     }
 
-    // validate the secret is parseable as base32
     try {
       decodeBase32Secret(secret);
     } catch (_) {
@@ -170,25 +158,10 @@ class TotpService {
     }
   }
 
-  /// Deletes an account and its associated secret from storage.
-  /// Uses the account's label as the key for deletion.
-  ///
-  /// Does not throw if the account does not exist.
   Future<void> delete(Account account) async {
-    await _storageService.delete(
-      account.label,
-      StorageSource.sharedPreferences,
-    );
-
-    await _storageService.delete(
-      '${account.label}_secret',
-      StorageSource.secureStorage,
-    );
+    await _accountStorageService.delete(account);
   }
 
-  /// ---- helpers ----
-
-  /// Decodes a Base32-encoded secret into bytes.
   List<int> decodeBase32Secret(String b32) {
     final normalized = b32
         .replaceAll(RegExp(r'\s+'), '')
@@ -197,7 +170,6 @@ class TotpService {
     return base32.decode(normalized);
   }
 
-  /// dynamic truncation per RFC4226
   int _dynamicTruncate(List<int> hmac) {
     final offset = hmac[hmac.length - 1] & 0x0f;
     final p0 = hmac[offset] & 0x7f;
@@ -207,14 +179,12 @@ class TotpService {
     return (p0 << 24) | (p1 << 16) | (p2 << 8) | p3;
   }
 
-  /// big-endian 8-byte counter
   List<int> _int64be(int value) {
     final b = ByteData(8);
     b.setInt64(0, value, Endian.big);
     return b.buffer.asUint8List();
   }
 
-  /// integer power of 10
   int _pow10(int n) {
     var r = 1;
     for (var i = 0; i < n; i++) {
@@ -226,7 +196,7 @@ class TotpService {
 
 @Riverpod(keepAlive: true)
 TotpService totpService(Ref ref) {
-  final storageService = ref.read(storageServiceProvider);
+  final accountStorageService = ref.read(accountStorageServiceProvider);
 
-  return TotpService(storageService: storageService);
+  return TotpService(accountStorageService: accountStorageService);
 }

@@ -1,4 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:cipher/src/feature/account/utils/account_storage_keys.dart';
 
 part 'auth_models.freezed.dart';
 part 'auth_models.g.dart';
@@ -71,6 +72,8 @@ class Account with _$Account {
   }
 
   String get id {
-    return label; // assuming label is unique; otherwise, use a UUID or hash
+    return accountStorageKey(issuer, label);
   }
+
+  String get storageId => authoritativeAccountStorageKey(issuer, label);
 }

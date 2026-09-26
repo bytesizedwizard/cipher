@@ -6,7 +6,7 @@ part of 'totp_service.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$totpServiceHash() => r'92713e6909ff7922398af3172538b2ad8e8d774b';
+String _$totpServiceHash() => r'3fb1c27d87f5d65e201a6b431ab410297e967dd1';
 
 /// See also [totpService].
 @ProviderFor(totpService)

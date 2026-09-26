@@ -31,7 +31,7 @@ class StorageService {
     } else {
       try {
         return await _sharedPreferencesAsync.getString(key);
-      } catch (e) {
+      } on Object {
         return null;
       }
     }

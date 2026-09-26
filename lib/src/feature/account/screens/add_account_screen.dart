@@ -57,6 +57,7 @@ class _AddEntityScreenState extends ConsumerState<AddEntityScreen> {
     final formKey = useMemoized(() => GlobalKey<FormState>());
     final ObjectRef<Map<String, String>> accountDetails = useRef({});
     final isScanning = useRef(false);
+    final isSaving = useState(false);
 
     return Scaffold(
       appBar: BaseAppBar(
@@ -278,6 +279,21 @@ class _AddEntityScreenState extends ConsumerState<AddEntityScreen> {
                               },
                             );
                           }
+                        } on AccountStorageIssue catch (e) {
+                          isScanning.value = false;
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                backgroundColor: palette.error,
+                                content: Text(
+                                  e.message,
+                                  style: textStyles.body.copyWith(
+                                    color: palette.fromHex("#FFFFFF"),
+                                  ),
+                                ),
+                              ),
+                            );
+                          }
                         } catch (_) {
                           isScanning.value = false;
                           if (context.mounted) {
@@ -285,7 +301,7 @@ class _AddEntityScreenState extends ConsumerState<AddEntityScreen> {
                               SnackBar(
                                 backgroundColor: palette.error,
                                 content: Text(
-                                  "Invalid code format.",
+                                  "Unable to save account.",
                                   style: textStyles.body.copyWith(
                                     color: palette.fromHex("#FFFFFF"),
                                   ),
@@ -370,38 +386,76 @@ class _AddEntityScreenState extends ConsumerState<AddEntityScreen> {
                     ),
                     const Gap(15),
                     SemanticElevatedButton(
-                      label: "Add Account",
-                      onPressed: () {
-                        if (formKey.currentState?.validate() ?? false) {
-                          formKey.currentState?.save();
+                      label: isSaving.value ? "Saving..." : "Add Account",
+                      onPressed: isSaving.value
+                          ? null
+                          : () async {
+                              if (formKey.currentState?.validate() ?? false) {
+                                formKey.currentState?.save();
 
-                          final secret = accountDetails.value['secret'] ?? '';
-                          String label = accountDetails.value['name'] ?? '';
-                          String issuer = accountDetails.value['issuer'] ?? '';
+                                final secret =
+                                    accountDetails.value['secret'] ?? '';
+                                String label =
+                                    accountDetails.value['name'] ?? '';
+                                String issuer =
+                                    accountDetails.value['issuer'] ?? '';
 
-                          if (label.contains(":") && issuer.isEmpty) {
-                            issuer = label.split(":").first;
-                            label = label.split(":").last;
-                          }
+                                if (label.contains(":") && issuer.isEmpty) {
+                                  issuer = label.split(":").first;
+                                  label = label.split(":").last;
+                                }
 
-                          final account = Account(
-                            label: label,
-                            issuer: issuer,
-                            algorithm: AuthConstants.algorithmSHA1,
-                            digits: 6,
-                            period: 30,
-                            type: AuthConstants.totp,
-                          );
+                                final account = Account(
+                                  label: label,
+                                  issuer: issuer,
+                                  algorithm: AuthConstants.algorithmSHA1,
+                                  digits: 6,
+                                  period: 30,
+                                  type: AuthConstants.totp,
+                                );
 
-                          ref
-                              .read(authControllerProvider.notifier)
-                              .addAccount(account, secret);
+                                isSaving.value = true;
+                                try {
+                                  await ref
+                                      .read(authControllerProvider.notifier)
+                                      .addAccount(account, secret);
 
-                          if (context.mounted) {
-                            context.pop();
-                          }
-                        }
-                      },
+                                  if (context.mounted) {
+                                    context.pop();
+                                  }
+                                } on AccountStorageIssue catch (e) {
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        backgroundColor: palette.error,
+                                        content: Text(
+                                          e.message,
+                                          style: textStyles.body.copyWith(
+                                            color: palette.fromHex("#FFFFFF"),
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                } catch (_) {
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        backgroundColor: palette.error,
+                                        content: Text(
+                                          "Unable to save account.",
+                                          style: textStyles.body.copyWith(
+                                            color: palette.fromHex("#FFFFFF"),
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                } finally {
+                                  isSaving.value = false;
+                                }
+                              }
+                            },
                       semanticLabel: "Add new account",
                     ),
                   ],

@@ -1,3 +1,4 @@
+import 'package:cipher/src/feature/account/models/errors.dart';
 import 'package:cipher/src/feature/account/providers/auth_providers.dart';
 import 'package:cipher/src/providers/colors.dart';
 import 'package:cipher/src/providers/styles.dart';
@@ -86,14 +87,28 @@ class DeleteAccountDialog extends HookConsumerWidget {
                   ? () async {
                       if (formKey.currentState!.validate()) {
                         // Proceed with account deletion
-                        await ref
-                            .read(authControllerProvider.notifier)
-                            .deleteAccount(id);
+                        try {
+                          await ref
+                              .read(authControllerProvider.notifier)
+                              .deleteAccount(id);
 
-                        if (context.mounted) {
-                          context.go(
-                            '/home',
-                          ); // Navigate to home or appropriate screen
+                          if (context.mounted) {
+                            context.go('/home');
+                          }
+                        } on AccountStorageIssue catch (e) {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(
+                              context,
+                            ).showSnackBar(SnackBar(content: Text(e.message)));
+                          }
+                        } catch (_) {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Unable to delete account.'),
+                              ),
+                            );
+                          }
                         }
                       }
                     }
