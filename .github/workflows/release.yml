@@ -1,0 +1,253 @@
+name: Signed release artifacts
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+env:
+  FLUTTER_VERSION: "3.47.2"
+
+concurrency:
+  group: signed-release-${{ github.ref }}
+  cancel-in-progress: false
+
+ # Release artifacts are built only after the same quality checks used by CI.
+ # Branch protection remains responsible for enforcing the default-branch gate.
+jobs:
+  quality:
+    name: Release quality gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Verify generated code
+        run: dart run build_runner build
+
+      - name: Verify generated files are committed
+        run: git diff --exit-code
+
+      - name: Verify Android release contract
+        shell: bash
+        run: |
+          grep -q 'android.permission.CAMERA' android/app/src/main/AndroidManifest.xml
+          grep -q 'android.permission.USE_BIOMETRIC' android/app/src/main/AndroidManifest.xml
+          if grep -q 'android.permission.INTERNET' android/app/src/main/AndroidManifest.xml; then
+            echo "Cipher must remain offline-first and must not request INTERNET."
+            exit 1
+          fi
+          grep -q 'isMinifyEnabled = true' android/app/build.gradle.kts
+          grep -q 'isShrinkResources = true' android/app/build.gradle.kts
+
+      - name: Check formatting
+        run: dart format --output=none --set-exit-if-changed lib test integration_test
+
+      - name: Analyze
+        run: dart analyze
+
+      - name: Run tests
+        run: flutter test
+
+  android:
+    name: Signed Android artifacts
+    runs-on: ubuntu-latest
+    needs: quality
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Prepare Android signing
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          test -n "$ANDROID_KEYSTORE_BASE64"
+          test -n "$ANDROID_STORE_PASSWORD"
+          test -n "$ANDROID_KEY_PASSWORD"
+          test -n "$ANDROID_KEY_ALIAS"
+          KEYSTORE_PATH="$RUNNER_TEMP/cipher-upload-keystore.jks"
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$KEYSTORE_PATH"
+          cat > android/key.properties <<EOF
+          storePassword=$ANDROID_STORE_PASSWORD
+          keyPassword=$ANDROID_KEY_PASSWORD
+          keyAlias=$ANDROID_KEY_ALIAS
+          storeFile=$KEYSTORE_PATH
+          EOF
+
+      - name: Build signed Android artifacts
+        run: |
+          flutter build appbundle --release
+          flutter build apk --release
+
+      - name: Verify Android APK signature
+        run: |
+          APKSIGNER="$(find "$ANDROID_HOME/build-tools" -name apksigner -type f | sort -V | tail -n 1)"
+          test -x "$APKSIGNER"
+          "$APKSIGNER" verify --verbose build/app/outputs/flutter-apk/app-release.apk
+
+      - name: Upload Android artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: cipher-android-${{ github.ref_name }}
+          if-no-files-found: error
+          path: |
+            build/app/outputs/bundle/release/app-release.aab
+            build/app/outputs/flutter-apk/app-release.apk
+
+      - name: Remove Android signing material
+        if: always()
+        run: |
+          rm -f android/key.properties "$RUNNER_TEMP/cipher-upload-keystore.jks"
+
+  ios:
+    name: Signed iOS artifacts
+    runs-on: macos-latest
+    needs: quality
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Prepare Apple signing
+        env:
+          APPLE_CERTIFICATE_BASE64: ${{ secrets.APPLE_CERTIFICATE_BASE64 }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_KEYCHAIN_PASSWORD: ${{ secrets.APPLE_KEYCHAIN_PASSWORD }}
+          APPLE_PROVISIONING_PROFILE_BASE64: ${{ secrets.APPLE_PROVISIONING_PROFILE_BASE64 }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          test -n "$APPLE_CERTIFICATE_BASE64"
+          test -n "$APPLE_CERTIFICATE_PASSWORD"
+          test -n "$APPLE_KEYCHAIN_PASSWORD"
+          test -n "$APPLE_PROVISIONING_PROFILE_BASE64"
+          test -n "$APPLE_TEAM_ID"
+
+          CERTIFICATE_PATH="$RUNNER_TEMP/cipher-distribution.p12"
+          PROFILE_PATH="$RUNNER_TEMP/cipher.mobileprovision"
+          KEYCHAIN_PATH="$RUNNER_TEMP/cipher-build.keychain-db"
+          PROFILE_DIR="$HOME/Library/MobileDevice/Provisioning Profiles"
+          mkdir -p "$PROFILE_DIR"
+
+          printf '%s' "$APPLE_CERTIFICATE_BASE64" | base64 --decode > "$CERTIFICATE_PATH"
+          printf '%s' "$APPLE_PROVISIONING_PROFILE_BASE64" | base64 --decode > "$PROFILE_PATH"
+
+          security create-keychain -p "$APPLE_KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$APPLE_KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security import "$CERTIFICATE_PATH" \
+            -k "$KEYCHAIN_PATH" \
+            -P "$APPLE_CERTIFICATE_PASSWORD" \
+            -T /usr/bin/codesign \
+            -T /usr/bin/security
+          security list-keychain -d user -s "$KEYCHAIN_PATH"
+          security default-keychain -s "$KEYCHAIN_PATH"
+
+          security cms -D -i "$PROFILE_PATH" > "$RUNNER_TEMP/profile.plist"
+          PROFILE_UUID=$(/usr/libexec/PlistBuddy -c 'Print :UUID' "$RUNNER_TEMP/profile.plist")
+          PROFILE_NAME=$(/usr/libexec/PlistBuddy -c 'Print :Name' "$RUNNER_TEMP/profile.plist")
+          cp "$PROFILE_PATH" "$PROFILE_DIR/$PROFILE_UUID.mobileprovision"
+          {
+            echo "APPLE_TEAM_ID=$APPLE_TEAM_ID"
+            echo "APPLE_PROVISIONING_PROFILE_NAME=$PROFILE_NAME"
+            echo "APPLE_KEYCHAIN_PATH=$KEYCHAIN_PATH"
+          } >> "$GITHUB_ENV"
+
+          cat > "$RUNNER_TEMP/ExportOptions.plist" <<EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key>
+            <string>app-store</string>
+            <key>signingStyle</key>
+            <string>manual</string>
+            <key>signingCertificate</key>
+            <string>Apple Distribution</string>
+            <key>teamID</key>
+            <string>$APPLE_TEAM_ID</string>
+            <key>provisioningProfiles</key>
+            <dict>
+              <key>dev.bytesizedwizard.cipherauth</key>
+              <string>$PROFILE_NAME</string>
+            </dict>
+          </dict>
+          </plist>
+          EOF
+
+      - name: Build signed IPA
+        run: |
+          flutter build ipa \
+            --release \
+            --export-options-plist="$RUNNER_TEMP/ExportOptions.plist"
+
+      - name: Verify iOS signature and entitlements
+        run: |
+          IPA_PATH="$(find build/ios/ipa -name '*.ipa' -type f | head -n 1)"
+          test -f "$IPA_PATH"
+          rm -rf "$RUNNER_TEMP/cipher-ipa"
+          mkdir -p "$RUNNER_TEMP/cipher-ipa"
+          unzip -q "$IPA_PATH" -d "$RUNNER_TEMP/cipher-ipa"
+          APP_PATH="$(find "$RUNNER_TEMP/cipher-ipa/Payload" -maxdepth 1 -name '*.app' -type d | head -n 1)"
+          test -d "$APP_PATH"
+          codesign --verify --deep --strict --verbose=2 "$APP_PATH"
+          codesign -d --entitlements :- "$APP_PATH" > "$RUNNER_TEMP/entitlements.plist" 2>/dev/null
+          GET_TASK_ALLOW=$(/usr/libexec/PlistBuddy -c 'Print :get-task-allow' "$RUNNER_TEMP/entitlements.plist" 2>/dev/null || true)
+          test "$GET_TASK_ALLOW" = "false"
+
+      - name: Upload iOS artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: cipher-ios-${{ github.ref_name }}
+          if-no-files-found: error
+          path: |
+            build/ios/ipa/*.ipa
+            build/ios/archive/*.xcarchive
+
+      - name: Remove Apple signing material
+        if: always()
+        run: |
+          if [ -n "${APPLE_KEYCHAIN_PATH:-}" ] && [ -f "$APPLE_KEYCHAIN_PATH" ]; then
+            security delete-keychain "$APPLE_KEYCHAIN_PATH" || true
+          fi
+          rm -f \
+            "$RUNNER_TEMP/cipher-distribution.p12" \
+            "$RUNNER_TEMP/cipher.mobileprovision" \
+            "$RUNNER_TEMP/profile.plist" \
+            "$RUNNER_TEMP/ExportOptions.plist" \
+            "$RUNNER_TEMP/entitlements.plist"

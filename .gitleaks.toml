@@ -1,0 +1,7 @@
+[allowlist]
+description = "Known non-secret Base32 fixture used by deterministic OTP tests."
+regexes = [
+  '''JBSWY3DPEHPK3PXP''',
+  '''GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ''',
+]
+paths = ['''^test/''', '''^integration_test/''']

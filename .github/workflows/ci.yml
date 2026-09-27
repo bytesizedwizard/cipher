@@ -1,0 +1,148 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+env:
+  FLUTTER_VERSION: "3.47.2"
+
+jobs:
+  dart:
+    name: Dart checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Verify generated code
+        run: dart run build_runner build
+
+      - name: Verify generated files are committed
+        run: git diff --exit-code
+
+      - name: Verify plan and worktree cleanliness
+        shell: bash
+        run: |
+          pattern='(^|[^[:alnum:]])(TODO|TBD|FIXME)([^[:alnum:]]|$)|<INSERT_[^>]+>'
+          if grep -nE "$pattern" plan/process-production-readiness-1.md; then
+            echo "Unresolved placeholder markers found in the production-readiness plan."
+            exit 1
+          fi
+          if find lib -name '*.g.dart' -print0 | xargs -0 grep -nE "$pattern"; then
+            echo "Unresolved placeholder markers found in generated Dart files."
+            exit 1
+          fi
+          test -z "$(git status --short)"
+
+      - name: Verify Android release contract
+        shell: bash
+        run: |
+          grep -q 'android.permission.CAMERA' android/app/src/main/AndroidManifest.xml
+          grep -q 'android.permission.USE_BIOMETRIC' android/app/src/main/AndroidManifest.xml
+          if grep -q 'android.permission.INTERNET' android/app/src/main/AndroidManifest.xml; then
+            echo "Cipher must remain offline-first and must not request INTERNET."
+            exit 1
+          fi
+          grep -q 'isMinifyEnabled = true' android/app/build.gradle.kts
+          grep -q 'isShrinkResources = true' android/app/build.gradle.kts
+          signing_files="$(find . -type f \( -name '*.jks' -o -name '*.keystore' -o -name '*.mobileprovision' -o -name '*.p12' \) -not -path './build/*' -print)"
+          if [ -n "$signing_files" ]; then
+            echo "Signing material must not be tracked."
+            exit 1
+          fi
+
+      - name: Check formatting
+        run: dart format --output=none --set-exit-if-changed lib test integration_test
+
+      - name: Analyze
+        run: dart analyze
+
+      - name: Run tests
+        run: flutter test
+
+      - name: Report direct dependency drift
+        run: dart pub outdated --no-dev-dependencies
+
+      - name: Check whitespace
+        run: git diff --check
+
+  android:
+    name: Android debug build
+    runs-on: ubuntu-latest
+    needs: dart
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build debug APK
+        run: flutter build apk --debug
+
+  ios:
+    name: iOS unsigned release build
+    runs-on: macos-latest
+    needs: dart
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build unsigned iOS release
+        env:
+          APPLE_TEAM_ID: UNSIGNED
+        run: flutter build ios --release --no-codesign
+
+  security:
+    name: Dependency and secret scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Scan dependencies
+        uses: google/osv-scanner-action/osv-scanner-action@v2.0.2
+        with:
+          scan-args: |-
+            --lockfile=pubspec.lock
+
+      - name: Scan repository for secrets
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
