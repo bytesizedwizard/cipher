@@ -16,7 +16,7 @@ Feature-based under `lib/src/feature/<name>/`. Each has: `models/`, `providers/`
 
 | Feature | Job | Key files |
 |---------|-----|-----------|
-| `account` | CRUD, TOTP gen, dual storage | `totp_service.dart`, `auth_service.dart`, `storage_service.dart` |
+| `account` | CRUD, TOTP/HOTP generation, secure persistence | `totp_service.dart`, `auth_service.dart`, `account_storage_service.dart` |
 | `home` | TOTP list + countdown | `home_screen.dart` |
 | `settings` | Theme, biometric, clipboard timeout | `settings_provider.dart`, `settings_models.dart` |
 | `splash` | Boot + biometric gate | `splash_screen.dart` |
@@ -31,9 +31,10 @@ Input → TotpService.decode() → (Account, secret)
     → FlutterSecureStorage (versioned account record + base64 secret)
   → AuthController.addAccount() → refresh state
 
-AuthController._tick() [1s]:
+AuthController._startTicker() [1s]:
   → TotpService.refresh(account)
-    → StorageService.read() → decodeBase32Secret()
+    → AccountStorageService.readSecret()
+    → decodeBase32Secret()
     → HMAC → dynamic truncation → AccountView to UI
 ```
 
@@ -45,14 +46,15 @@ AuthController._tick() [1s]:
 | `/home` | HomeScreen | No transition |
 | `/howto` | HowToScreen | Tutorial |
 | `/auth/add` | AddEntityScreen | QR/manual |
-| `/auth/view` | ViewAccountScreen | `state.extra = account id` |
+| `/auth/view` | ViewAccountScreen | `?id = canonical account id` |
 | `/settings` | SettingsScreen | No transition |
 | `/settings/update` | UpdateSettingScreen | `state.extra = SettingsOption` |
 
 ## Conventions (security-critical)
 
 - **Never log/print secrets.** Plain text forbidden.
-- Account records and secrets → FlutterSecureStorage.
+- Account records and secrets → FlutterSecureStorage through
+  `AccountStorageService`.
 - SharedPreferences stores settings only; legacy split records migrate on startup.
 - Authoritative account key: `"account:${Uri.encodeComponent(issuer)}:${Uri.encodeComponent(label)}"`.
 - Delete removes authoritative and legacy records.
@@ -63,7 +65,8 @@ AuthController._tick() [1s]:
 - Riverpod with `@Riverpod(keepAlive: true)` for services/controllers.
 - @freezed for data models.
 - `SettingsState` sealed union: `initial/loading/loaded(Settings)/error(String)`.
-- `AuthController` holds `Map<String, AccountView>`, 1s tick for TOTP.
+- `AuthController` holds `Map<String, AccountView>`, redacts OTPs while
+  locked, and refreshes TOTP/HOTP views on a 1s ticker.
 - `WidgetsBindingObserver` for lifecycle (pause timer on app bg).
 
 ### URI parsing

@@ -274,7 +274,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Custom fonts and app icons
 
 ### Security
-- End-to-end encryption for secrets using platform secure storage
+- Platform secure storage for authentication secrets
 - RFC 6238 (TOTP) standard implementation
 - Secure clipboard handling with timeout
 - Privacy-first design with no telemetry
@@ -291,7 +291,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Cipher is a security-focused authenticator application. All releases undergo security review, and we prioritize:
 
-- **End-to-end encryption** for all sensitive data
+- **Platform secure storage** for authentication secrets; no app-level
+  encryption layer is currently implemented
 - **Offline-first design** with no cloud dependencies  
 - **Platform secure storage** for authentication secrets
 - **Biometric authentication** with platform-specific implementations

@@ -2,7 +2,7 @@
 goal: Make QR-added accounts durable across application restarts
 version: 1.0
 date_created: 2026-08-06
-last_updated: 2026-08-06
+last_updated: 2026-09-26
 owner: bytesizedwizard
 status: In progress
 tags: [bug, critical, persistence, security, account]
@@ -18,9 +18,9 @@ migrating existing accounts, verifying successful writes, and making cold-start
 loading awaitable and error-aware. The fix must preserve existing accounts and
 must not expose secrets in logs, exceptions, tests, or user-facing messages.
 
-Implementation status: application changes and automated host tests are complete.
-The real-platform integration test is included but requires Android or iOS
-execution outside the current environment.
+Implementation status: application changes, automated host tests, and the
+iOS-simulator real-storage integration suite are complete. Android execution,
+process-death validation, and physical lifecycle testing remain external gates.
 
 ## 1. Requirements & Constraints
 
@@ -49,11 +49,11 @@ execution outside the current environment.
 
 | Task | Description | Completed | Date |
 |------|-------------|-----------|------|
-| TASK-001 | Create `lib/src/feature/account/models/stored_account.dart` with a `@freezed` `StoredAccountRecord` model containing `Account account`, `String encodedSecret`, and `int version`; add JSON serialization and set the initial record version to `1`. Persist `account.otp` as `null` because OTP is transient UI state. | | |
-| TASK-002 | Create `lib/src/feature/account/utils/account_storage_keys.dart` with constants and helpers: legacy metadata key `${issuer}:${label}`, legacy secret key `${legacyKey}_secret`, authoritative record prefix `account:`, and collision-safe authoritative record key `account:${Uri.encodeComponent(issuer)}:${Uri.encodeComponent(label)}`. All helpers must accept the issuer and label separately and return deterministic strings. | | |
-| TASK-003 | Update `lib/src/feature/account/models/auth_models.dart` so `Account.id` returns the canonical legacy identifier `${issuer}:${label}` rather than only `label`; add a `storageId` getter that delegates to the key helper. Update generated model files through code generation. | | |
-| TASK-004 | Add an `AccountStorageIssue` typed error model in `lib/src/feature/account/models/errors.dart` for invalid record, missing secret, verification failure, and migration failure cases. Error messages must contain only the safe account identifier and operation name, never secret material. | | |
-| DONE-001 | A stored account record round-trips through JSON, every account has one canonical identifier, and the new record key cannot collide for issuers or labels containing reserved URI characters. | | |
+| TASK-001 | Create the versioned `StoredAccountRecord` Freezed/JSON model containing account metadata, Base64-encoded secret, and record version; omit transient OTP state. | ✅ | 2026-09-26 |
+| TASK-002 | Create deterministic legacy and collision-safe authoritative storage-key helpers using encoded issuer/label components. | ✅ | 2026-09-26 |
+| TASK-003 | Make `Account.id` and `storageId` use the collision-safe authoritative key while retaining `legacyId` for migration compatibility; regenerate model files. | ✅ | 2026-09-26 |
+| TASK-004 | Add sanitized typed `AccountStorageIssue` errors for invalid records, missing secrets, verification failures, and migration failures. | ✅ | 2026-09-26 |
+| DONE-001 | Stored records round-trip, transient OTP state is omitted, and reserved issuer/label characters cannot collide in authoritative keys. | ✅ | 2026-09-26 |
 
 ### Implementation Phase 2
 
@@ -61,15 +61,15 @@ execution outside the current environment.
 
 | Task | Description | Completed | Date |
 |------|-------------|-----------|------|
-| TASK-005 | Create `lib/src/feature/account/services/account_storage_service.dart` with a Riverpod keep-alive provider and methods `save(Account account, String secret)`, `loadAll()`, `readSecret(Account account)`, `delete(Account account)`, and `migrateLegacyAccounts()`. Inject a small storage-backend interface so the service can be tested with an in-memory implementation without platform plugins. | | |
-| TASK-006 | Implement `save()` to validate the Base32 secret, encode it with `base64Encode(utf8.encode(secret))`, write exactly one `StoredAccountRecord` to the authoritative secure-storage key, read the record back, decode it, and compare the canonical identifier and encoded-secret length/content. Throw `AccountStorageIssue` and delete the new record if verification fails. | | |
-| TASK-007 | Implement `loadAll()` to call secure-storage `readAll()`, filter only keys beginning with `account:`, parse each record independently, validate record version, validate the account fields, and return valid records plus typed issues. Do not parse settings or unrelated secure-storage keys as accounts. | | |
-| TASK-008 | Implement `readSecret()` to load the authoritative record by canonical key, decode the stored Base64 value, reject missing/empty/corrupt values with `AccountStorageIssue`, and provide a legacy-key fallback only for records that have not completed migration. | | |
-| TASK-009 | Implement `migrateLegacyAccounts()` to enumerate SharedPreferences entries excluding `SettingsConstants.storageKey`, parse each legacy `Account`, read its legacy secure-storage secret, create and verify the authoritative record, then delete the old metadata and old secret only after verification succeeds. Keep legacy entries intact and report a typed issue when migration cannot complete. | | |
-| TASK-010 | Implement `delete()` to delete the authoritative record and then remove matching legacy metadata and legacy secret keys. Treat a missing key as success, but propagate actual storage failures. | | |
-| TASK-011 | Refactor `lib/src/feature/account/services/auth_service.dart` to delegate account add, load, and delete operations to `AccountStorageService`; retain query filtering over loaded account metadata and remove direct account writes to SharedPreferences. | | |
-| TASK-012 | Refactor `lib/src/feature/account/services/totp_service.dart` so `refresh(Account account)` reads the secret through `AccountStorageService.readSecret()` and no longer reconstructs storage keys independently. Remove or delegate the unused label-only `delete(Account)` implementation. | | |
-| DONE-002 | New accounts are represented by one verified secure record, legacy accounts are migrated idempotently, and no new account metadata is written to SharedPreferences. | | |
+| TASK-005 | Implement `AccountStorageService` with an injectable backend and authoritative save/load/read/delete/migration operations. | ✅ | 2026-09-26 |
+| TASK-006 | Validate Base32 secrets, write one versioned secure record, read it back, compare safe identity/encoded-secret data, and clean up failed writes. | ✅ | 2026-09-26 |
+| TASK-007 | Enumerate only `account:` secure keys, parse records independently, migrate older versions, and return valid records with typed issues. | ✅ | 2026-09-26 |
+| TASK-008 | Read authoritative Base64 secrets with a legacy fallback for incomplete migrations and sanitized failure reporting. | ✅ | 2026-09-26 |
+| TASK-009 | Migrate legacy SharedPreferences metadata plus secure secrets only after verified authoritative writes; retain failed legacy data. | ✅ | 2026-09-26 |
+| TASK-010 | Delete authoritative and legacy records consistently, treating missing keys as success and propagating real storage failures. | ✅ | 2026-09-26 |
+| TASK-011 | Delegate account persistence/query/deletion to `AccountStorageService` and remove new account metadata writes to SharedPreferences. | ✅ | 2026-09-26 |
+| TASK-012 | Route OTP secret reads through `AccountStorageService.readSecret()` and remove independent storage-key reconstruction. | ✅ | 2026-09-26 |
+| DONE-002 | New accounts use one verified secure record, legacy records migrate idempotently, and settings remain the only SharedPreferences data. | ✅ | 2026-09-26 |
 
 ### Implementation Phase 3
 
@@ -77,14 +77,14 @@ execution outside the current environment.
 
 | Task | Description | Completed | Date |
 |------|-------------|-----------|------|
-| TASK-013 | Refactor `lib/src/feature/account/providers/auth_providers.dart` so `AuthController` is an `AsyncNotifier` exposing `AsyncValue<Map<String, AccountView>>`. Set `AsyncData` only after migration, account loading, and the first complete OTP refresh succeed, and set `AsyncError` with a sanitized error for failures. | | |
-| TASK-014 | Refactor `AuthController.build()` to await `migrateLegacyAccounts()`, await account loading, await the first OTP refresh, and start the periodic timer only after successful initialization. Do not use fire-and-forget calls for initialization or refresh operations. | | |
-| TASK-015 | Add an in-flight refresh guard or generation token to `_tick()` so periodic ticks cannot overwrite newer account data with stale results. Preserve the last valid `AsyncData` state when a later refresh fails, while surfacing the sanitized error state to the UI. | | |
-| TASK-016 | Refactor `refreshAccounts(String query)`, `addAccount()`, `addAccountFromUri()`, and `deleteAccount()` to await persistence, refresh, and state publication in order. An operation must return only after the new state is available or a typed error is thrown. | | |
-| TASK-017 | Update `lib/src/feature/home/screens/home_screen.dart` to consume `AsyncValue`, render loading and safe error states, and use `valueOrNull` only for explicitly empty-state logic. Do not interpret an initialization error as “Nothing to see here!”. | | |
-| TASK-018 | Update `lib/src/feature/account/screens/view_account_screen.dart` to consume `AsyncValue`, handle a missing account without `firstWhere` failure, and use `item.account.id` for deletion rather than reconstructing a separate key. | | |
-| TASK-019 | Update `lib/src/feature/account/widgets/delete_account_dialog.dart` and all account route callers to pass the canonical `Account.id`; ensure deletion uses the same identifier used by persistence and `AuthController`. | | |
-| DONE-003 | A cold start cannot display an empty account list while initialization is still running or failed, and all add/delete/refresh operations have deterministic completion semantics. | | |
+| TASK-013 | Use `AsyncNotifier` account state with sanitized errors and deterministic loaded/locked behavior. | ✅ | 2026-09-26 |
+| TASK-014 | Await migration, account loading, initial refresh, and ticker startup; remove initialization fire-and-forget behavior. | ✅ | 2026-09-26 |
+| TASK-015 | Use refresh serialization/generation guards and preserve valid prior state when later refreshes fail. | ✅ | 2026-09-26 |
+| TASK-016 | Await persistence, refresh, and state publication for query, add, URI-add, and delete operations. | ✅ | 2026-09-26 |
+| TASK-017 | Render loading/error/empty account states without converting initialization errors into a false empty state. | ✅ | 2026-09-26 |
+| TASK-018 | Handle missing detail accounts safely and delete by canonical account ID. | ✅ | 2026-09-26 |
+| TASK-019 | Pass canonical account IDs through deletion dialogs, routes, and controller operations. | ✅ | 2026-09-26 |
+| DONE-003 | Cold start and account mutations have deterministic completion semantics and do not present failed initialization as an empty account list. | ✅ | 2026-09-26 |
 
 ### Implementation Phase 4
 
@@ -92,11 +92,11 @@ execution outside the current environment.
 
 | Task | Description | Completed | Date |
 |------|-------------|-----------|------|
-| TASK-020 | Update `lib/src/feature/account/screens/add_account_screen.dart` QR `onDetect` handling so it awaits `addAccountFromUri()` and the resulting state refresh before navigating to `/home`; keep the duplicate-scan guard and reset it on every handled failure. | | |
-| TASK-021 | Update the manual-entry submit callback in `add_account_screen.dart` to be `async`, await `addAccount(account, secret)`, navigate only after success, and keep the screen open while showing a sanitized persistence error on failure. | | |
-| TASK-022 | Add a safe persistence-failure dialog or snackbar path using `AccountStorageIssue`; do not reuse “Invalid code format” for storage failures because that incorrectly attributes a persistence failure to QR parsing. | | |
-| TASK-023 | Ensure app lifecycle resume in `AuthController.didChangeAppLifecycleState` awaits a full account reload or refresh before restarting the ticker, without clearing a valid state on transient failure. | | |
-| DONE-004 | QR and manual additions cannot navigate away before verified persistence, and storage failures are distinguishable from invalid QR payloads. | | |
+| TASK-020 | Await QR `addAccountFromUri()` persistence/state completion before navigating and reset the duplicate-scan guard on handled failures. | ✅ | 2026-09-26 |
+| TASK-021 | Await manual account persistence, navigate only after success, and keep the form open on sanitized persistence failure. | ✅ | 2026-09-26 |
+| TASK-022 | Distinguish persistence failures from invalid QR/manual input in user-facing error handling. | ✅ | 2026-09-26 |
+| TASK-023 | Reload/refresh account state before restarting lifecycle-driven refresh behavior and preserve valid state on transient failure. | ✅ | 2026-09-26 |
+| DONE-004 | QR/manual additions persist before navigation and storage failures are not mislabeled as parse failures. | ✅ | 2026-09-26 |
 
 ### Implementation Phase 5
 
@@ -104,14 +104,14 @@ execution outside the current environment.
 
 | Task | Description | Completed | Date |
 |------|-------------|-----------|------|
-| TASK-024 | Create `test/feature/account/services/account_storage_service_test.dart` with an in-memory backend covering authoritative record round-trip, Base32 validation, write verification failure, idempotent migration, missing legacy secret, malformed record isolation, and deletion of both new and legacy keys. | | |
-| TASK-025 | Create `test/feature/account/services/auth_service_test.dart` covering QR-style URI-derived accounts, query filtering after reload, canonical identifiers, and the guarantee that successful `addAccount()` can be loaded by a new service instance. | | |
-| TASK-026 | Create `test/feature/account/services/totp_service_test.dart` with RFC 6238 vectors using the new `AccountStorageService.readSecret()` path and a missing/corrupt-record failure case. | | |
-| TASK-027 | Create `test/feature/account/providers/auth_providers_test.dart` covering initial load, awaited first refresh, serialized refreshes, preservation of valid state after a later refresh failure, and provider recreation against the same backend. | | |
-| TASK-028 | Replace the obsolete counter-template contents of `test/widget_test.dart` with a provider-overridden `CipherApp` bootstrap test that verifies loading/error/empty account states do not crash and that a persisted account appears after provider recreation. | | |
-| TASK-029 | Add `integration_test/account_persistence_test.dart` or an equivalent device-level test using the real platform storage plugins. Add an account through the controller, force a lifecycle stop/resume or application recreation, and verify the account remains available without asserting or printing secret values. | | |
-| TASK-030 | Run `dart run build_runner build --delete-conflicting-outputs`, `dart analyze`, and `flutter test`; run the device-level persistence test on Android and iOS where platform storage behavior differs. | | |
-| DONE-005 | Automated coverage proves that an account added through the QR/controller path survives service/provider recreation, legacy data migrates, and failures are visible without secret leakage. | | |
+| TASK-024 | Cover authoritative round-trip, Base32 validation, verification cleanup, migration, missing secrets, malformed records, and deletion with an in-memory backend. | ✅ | 2026-09-26 |
+| TASK-025 | Cover URI-derived account persistence, query filtering, canonical identifiers, and new-service reload behavior. | ✅ | 2026-09-26 |
+| TASK-026 | Cover RFC 6238 vectors, authoritative secret lookup, and missing/corrupt-record failures. | ✅ | 2026-09-26 |
+| TASK-027 | Cover initial load, awaited refresh, serialized operations, refresh-error preservation, and provider recreation. | ✅ | 2026-09-26 |
+| TASK-028 | Replace the counter-template widget test with bootstrap and unsupported-platform-surface coverage. | ✅ | 2026-09-26 |
+| TASK-029 | Add real-storage integration coverage for QR decoding, service recreation, HOTP counter persistence, and collision-safe deletion; process-death/lifecycle coverage remains external. | ⚠️ | 2026-09-26 |
+| TASK-030 | Run code generation, analysis, formatting, host tests, and the iOS simulator integration suite; Android device execution remains pending. | ⚠️ | 2026-09-26 |
+| DONE-005 | Automated and iOS-simulator coverage proves verified persistence, migration behavior, QR-derived account durability across service recreation, and sanitized failure handling. | ⚠️ | 2026-09-26 |
 
 ## 3. Alternatives
 
