@@ -1,4 +1,7 @@
-String accountStorageKey(String issuer, String label) => '$issuer:$label';
+String legacyAccountStorageKey(String issuer, String label) => '$issuer:$label';
+
+String accountStorageKey(String issuer, String label) =>
+    legacyAccountStorageKey(issuer, label);
 
 String legacySecretStorageKey(String accountId) => '${accountId}_secret';
 

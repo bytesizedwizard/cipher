@@ -13,6 +13,7 @@ Account _$AccountFromJson(Map<String, dynamic> json) => Account(
   digits: (json['digits'] as num).toInt(),
   period: (json['period'] as num).toInt(),
   type: json['type'] as String,
+  counter: (json['counter'] as num?)?.toInt() ?? 0,
   otp: json['otp'] as String?,
 );
 
@@ -23,5 +24,6 @@ Map<String, dynamic> _$AccountToJson(Account instance) => <String, dynamic>{
   'digits': instance.digits,
   'period': instance.period,
   'type': instance.type,
+  'counter': instance.counter,
   'otp': instance.otp,
 };

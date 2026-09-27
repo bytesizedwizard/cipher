@@ -46,6 +46,9 @@ class Account with _$Account {
   @override
   final String type;
   @override
+  @JsonKey(defaultValue: 0)
+  final int counter;
+  @override
   String? otp;
 
   Account({
@@ -55,6 +58,7 @@ class Account with _$Account {
     required this.digits,
     required this.period,
     required this.type,
+    this.counter = 0,
     String? otp,
   });
 
@@ -72,8 +76,10 @@ class Account with _$Account {
   }
 
   String get id {
-    return accountStorageKey(issuer, label);
+    return storageId;
   }
 
   String get storageId => authoritativeAccountStorageKey(issuer, label);
+
+  String get legacyId => legacyAccountStorageKey(issuer, label);
 }

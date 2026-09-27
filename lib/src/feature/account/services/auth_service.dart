@@ -1,7 +1,7 @@
 import 'package:cipher/src/feature/account/models/auth_models.dart';
 import 'package:cipher/src/feature/account/models/errors.dart';
 import 'package:cipher/src/feature/account/services/account_storage_service.dart';
-import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:cipher/src/feature/account/utils/constants.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'auth_service.g.dart';
@@ -39,6 +39,24 @@ class AuthService {
 
   Future<void> deleteAccount(String id) async {
     await _accountStorageService.deleteById(id);
+  }
+
+  Future<void> advanceHotp(String id) async {
+    Account? account;
+    for (final candidate in await getAccounts('')) {
+      if (candidate.id == id) {
+        account = candidate;
+        break;
+      }
+    }
+    if (account == null || account.type != AuthConstants.hotp) {
+      throw AccountStorageIssue(
+        code: AccountStorageIssueCode.invalidRecord,
+        operation: 'advanceHotp',
+        accountId: id,
+      );
+    }
+    await _accountStorageService.updateCounter(account, account.counter + 1);
   }
 }
 

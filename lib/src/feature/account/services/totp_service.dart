@@ -6,7 +6,6 @@ import 'package:cipher/src/feature/account/models/errors.dart';
 import 'package:cipher/src/feature/account/services/account_storage_service.dart';
 import 'package:cipher/src/feature/account/utils/constants.dart';
 import 'package:crypto/crypto.dart' as crypto;
-import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'totp_service.g.dart';
@@ -24,49 +23,44 @@ class TotpService {
     String algorithm = AuthConstants.algorithmSHA1,
     DateTime? forTime,
   }) async {
-    final List<int> decodedSecret = decodeBase32Secret(secret);
-
     final now = (forTime ?? DateTime.now().toUtc()).toUtc();
     final epochSeconds = now.millisecondsSinceEpoch ~/ 1000;
     final counter = epochSeconds ~/ period;
 
-    final counterBytes = _int64be(counter);
-
-    final algo = algorithm.toUpperCase();
-    List<int> hmacBytes;
-    switch (algo) {
-      case AuthConstants.algorithmSHA256:
-        hmacBytes = crypto.Hmac(
-          crypto.sha256,
-          decodedSecret,
-        ).convert(counterBytes).bytes;
-        break;
-      case AuthConstants.algorithmSHA512:
-        hmacBytes = crypto.Hmac(
-          crypto.sha512,
-          decodedSecret,
-        ).convert(counterBytes).bytes;
-        break;
-      case AuthConstants.algorithmSHA1:
-      default:
-        hmacBytes = crypto.Hmac(
-          crypto.sha1,
-          decodedSecret,
-        ).convert(counterBytes).bytes;
-    }
-
-    final codeInt = _dynamicTruncate(hmacBytes) % _pow10(digits);
-    return codeInt.toString().padLeft(digits, '0');
+    return generateHotp(secret, counter, digits: digits, algorithm: algorithm);
   }
 
-  Future<String> generateHotp(String secret, int counter) async {
-    throw UnimplementedError(AuthErrorMessages.unimplementedError);
+  Future<String> generateHotp(
+    String secret,
+    int counter, {
+    int digits = AuthConstants.defaultDigits,
+    String algorithm = AuthConstants.defaultAlgorithm,
+  }) async {
+    if (counter < 0 || digits <= 0) {
+      throw ParseException(
+        code: ErrorCode.invalidCredentials,
+        message: AuthErrorMessages.entityParseError,
+      );
+    }
+
+    final decodedSecret = decodeBase32Secret(secret);
+    final hmacBytes = _hmac(decodedSecret, _int64be(counter), algorithm);
+    final codeInt = _dynamicTruncate(hmacBytes) % _pow10(digits);
+    return codeInt.toString().padLeft(digits, '0');
   }
 
   Future<String> refresh(Account account) async {
     final secret = await _accountStorageService.readSecret(account);
 
-    return await generateTotp(
+    if (account.type == AuthConstants.hotp) {
+      return generateHotp(
+        secret,
+        account.counter,
+        digits: account.digits,
+        algorithm: account.algorithm,
+      );
+    }
+    return generateTotp(
       secret: secret,
       digits: account.digits,
       period: account.period,
@@ -110,6 +104,7 @@ class TotpService {
         int.tryParse(parsed.queryParameters['period'] ?? '') ??
         AuthConstants.defaultPeriod;
     String type = parsed.host;
+    int counter = 0;
 
     if (secret.isEmpty || accountName.isEmpty) {
       throw ParseException(
@@ -144,18 +139,30 @@ class TotpService {
         code: ErrorCode.invalidCredentials,
         message: AuthErrorMessages.entityParseError,
       );
-    } else {
-      final account = Account(
-        label: accountName,
-        issuer: issuer.isEmpty ? label : issuer,
-        algorithm: algorithm,
-        digits: digits,
-        period: period,
-        type: type,
+    } else if (type == AuthConstants.hotp) {
+      final parsedCounter = int.tryParse(
+        parsed.queryParameters['counter'] ?? '',
       );
-
-      return (account, secret);
+      if (parsedCounter == null || parsedCounter < 0) {
+        throw ParseException(
+          code: ErrorCode.invalidCredentials,
+          message: AuthErrorMessages.entityParseError,
+        );
+      }
+      counter = parsedCounter;
     }
+
+    final account = Account(
+      label: accountName,
+      issuer: issuer.isEmpty ? label : issuer,
+      algorithm: algorithm,
+      digits: digits,
+      period: period,
+      type: type,
+      counter: counter,
+    );
+
+    return (account, secret);
   }
 
   Future<void> delete(Account account) async {
@@ -177,6 +184,22 @@ class TotpService {
     final p2 = hmac[offset + 2] & 0xff;
     final p3 = hmac[offset + 3] & 0xff;
     return (p0 << 24) | (p1 << 16) | (p2 << 8) | p3;
+  }
+
+  List<int> _hmac(List<int> secret, List<int> counter, String algorithm) {
+    switch (algorithm.toUpperCase()) {
+      case AuthConstants.algorithmSHA256:
+        return crypto.Hmac(crypto.sha256, secret).convert(counter).bytes;
+      case AuthConstants.algorithmSHA512:
+        return crypto.Hmac(crypto.sha512, secret).convert(counter).bytes;
+      case AuthConstants.algorithmSHA1:
+        return crypto.Hmac(crypto.sha1, secret).convert(counter).bytes;
+      default:
+        throw ParseException(
+          code: ErrorCode.invalidCredentials,
+          message: AuthErrorMessages.entityParseError,
+        );
+    }
   }
 
   List<int> _int64be(int value) {

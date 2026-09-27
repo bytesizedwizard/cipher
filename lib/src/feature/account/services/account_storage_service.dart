@@ -8,12 +8,11 @@ import 'package:cipher/src/feature/account/services/storage_service.dart';
 import 'package:cipher/src/feature/account/utils/account_storage_keys.dart';
 import 'package:cipher/src/feature/account/utils/constants.dart';
 import 'package:cipher/src/feature/settings/utils/constants.dart';
-import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'account_storage_service.g.dart';
 
-const int currentStoredAccountVersion = 1;
+const int currentStoredAccountVersion = 2;
 
 abstract interface class AccountStorageBackend {
   Future<void> writeSecure(String key, String value);
@@ -107,6 +106,50 @@ class AccountStorageService {
     );
   }
 
+  Future<void> updateCounter(Account account, int counter) async {
+    if (account.type != AuthConstants.hotp || counter < 0) {
+      throw AccountStorageIssue(
+        code: AccountStorageIssueCode.invalidRecord,
+        operation: 'updateCounter',
+        accountId: account.id,
+      );
+    }
+
+    final encoded = await _readSecure(
+      account.storageId,
+      account.id,
+      'updateCounter',
+    );
+    if (encoded == null) {
+      throw AccountStorageIssue(
+        code: AccountStorageIssueCode.missingSecret,
+        operation: 'updateCounter',
+        accountId: account.id,
+      );
+    }
+
+    final stored = _decodeRecord(encoded, 'updateCounter');
+    if (stored.account.id != account.id) {
+      throw AccountStorageIssue(
+        code: AccountStorageIssueCode.invalidRecord,
+        operation: 'updateCounter',
+        accountId: account.id,
+      );
+    }
+
+    final updated = stored.copyWith(
+      account: stored.account.copyWith(counter: counter, otp: null),
+      version: currentStoredAccountVersion,
+    );
+    await _writeAndVerify(
+      account.storageId,
+      updated,
+      account.id,
+      writeFailureCode: AccountStorageIssueCode.writeFailed,
+      verificationFailureCode: AccountStorageIssueCode.verificationFailed,
+    );
+  }
+
   Future<AccountStorageLoadResult> loadAll() async {
     final Map<String, Object?> all;
     try {
@@ -134,7 +177,8 @@ class AccountStorageService {
           );
         }
 
-        final record = _decodeRecord(entry.value! as String, 'loadAll');
+        final encoded = entry.value! as String;
+        final record = _decodeRecord(encoded, 'loadAll');
         if (record.account.storageId != entry.key) {
           throw AccountStorageIssue(
             code: AccountStorageIssueCode.invalidRecord,
@@ -143,6 +187,21 @@ class AccountStorageService {
           );
         }
         records.add(record);
+        final storedVersion = _recordVersion(encoded);
+        if (storedVersion != null &&
+            storedVersion != currentStoredAccountVersion) {
+          try {
+            await _writeAndVerify(
+              entry.key,
+              record,
+              record.account.id,
+              writeFailureCode: AccountStorageIssueCode.migrationFailed,
+              verificationFailureCode: AccountStorageIssueCode.migrationFailed,
+            );
+          } on AccountStorageIssue catch (issue) {
+            issues.add(issue);
+          }
+        }
       } on AccountStorageIssue catch (issue) {
         issues.add(issue);
       } on Object {
@@ -175,11 +234,22 @@ class AccountStorageService {
           accountId: account.id,
         );
       }
+      final storedVersion = _recordVersion(authoritativeValue);
+      if (storedVersion != null &&
+          storedVersion != currentStoredAccountVersion) {
+        await _writeAndVerify(
+          authoritativeKey,
+          record,
+          account.id,
+          writeFailureCode: AccountStorageIssueCode.migrationFailed,
+          verificationFailureCode: AccountStorageIssueCode.migrationFailed,
+        );
+      }
       return _decodeStoredSecret(record.encodedSecret, account.id);
     }
 
     final legacyValue = await _readSecure(
-      legacySecretStorageKey(account.id),
+      legacySecretStorageKey(account.legacyId),
       account.id,
       'readSecret',
     );
@@ -232,7 +302,7 @@ class AccountStorageService {
         continue;
       }
 
-      if (account.id != entry.key) {
+      if (account.legacyId != entry.key) {
         issues.add(
           AccountStorageIssue(
             code: AccountStorageIssueCode.migrationFailed,
@@ -252,7 +322,7 @@ class AccountStorageService {
         if (existing != null) {
           try {
             _decodeRecord(existing, 'migrateLegacyAccounts');
-            await _deleteLegacyAccount(account.id);
+            await _deleteLegacyAccount(account.legacyId);
             continue;
           } on AccountStorageIssue {
             // Replace invalid authoritative data with verified legacy data.
@@ -260,7 +330,7 @@ class AccountStorageService {
         }
 
         final legacySecret = await _readSecure(
-          legacySecretStorageKey(account.id),
+          legacySecretStorageKey(account.legacyId),
           account.id,
           'migrateLegacyAccounts',
         );
@@ -286,7 +356,7 @@ class AccountStorageService {
           writeFailureCode: AccountStorageIssueCode.migrationFailed,
           verificationFailureCode: AccountStorageIssueCode.migrationFailed,
         );
-        await _deleteLegacyAccount(account.id);
+        await _deleteLegacyAccount(account.legacyId);
       } on AccountStorageIssue catch (issue) {
         issues.add(issue);
       } on Object {
@@ -308,6 +378,7 @@ class AccountStorageService {
   Future<void> deleteById(String accountId) async {
     try {
       final all = await _backend.readAllSecure();
+      final legacyIds = <String>{};
       for (final entry in all.entries) {
         if (!isAuthoritativeAccountStorageKey(entry.key) ||
             entry.value is! String) {
@@ -322,15 +393,21 @@ class AccountStorageService {
           final account = Account.fromJson(
             Map<String, Object?>.from(decoded['account'] as Map),
           );
-          if (account.id == accountId) {
+          if (account.id == accountId || account.legacyId == accountId) {
             await _backend.deleteSecure(entry.key);
+            legacyIds.add(account.legacyId);
           }
         } on Object {
           // Ignore unrelated malformed records while deleting this account.
         }
       }
-      await _backend.deleteSecure(legacySecretStorageKey(accountId));
-      await _backend.deletePreference(accountId);
+      if (!isAuthoritativeAccountStorageKey(accountId)) {
+        legacyIds.add(accountId);
+      }
+      for (final legacyId in legacyIds) {
+        await _backend.deleteSecure(legacySecretStorageKey(legacyId));
+        await _backend.deletePreference(legacyId);
+      }
     } on Object {
       throw AccountStorageIssue(
         code: AccountStorageIssueCode.deleteFailed,
@@ -422,12 +499,17 @@ class AccountStorageService {
       final record = StoredAccountRecord.fromJson(
         Map<String, Object?>.from(decoded),
       );
-      if (record.version != currentStoredAccountVersion) {
+      final migrated = switch (record.version) {
+        1 => record.copyWith(version: currentStoredAccountVersion),
+        currentStoredAccountVersion => record,
+        _ => throw StateError('unsupported record version'),
+      };
+      if (migrated.version != currentStoredAccountVersion) {
         throw StateError('unsupported record version');
       }
-      _validateAccount(record.account, record.account.id);
-      _decodeStoredSecret(record.encodedSecret, record.account.id);
-      return record;
+      _validateAccount(migrated.account, migrated.account.id);
+      _decodeStoredSecret(migrated.encodedSecret, migrated.account.id);
+      return migrated;
     } on AccountStorageIssue {
       rethrow;
     } on Object {
@@ -436,6 +518,14 @@ class AccountStorageService {
         operation: operation,
       );
     }
+  }
+
+  int? _recordVersion(String encoded) {
+    final decoded = jsonDecode(encoded);
+    if (decoded is Map && decoded['version'] is num) {
+      return (decoded['version'] as num).toInt();
+    }
+    return null;
   }
 
   String _decodeStoredSecret(String encoded, String accountId) {
@@ -503,7 +593,8 @@ class AccountStorageService {
         !validAlgorithm ||
         !validType ||
         account.digits <= 0 ||
-        account.period <= 0) {
+        account.period <= 0 ||
+        account.counter < 0) {
       throw AccountStorageIssue(
         code: AccountStorageIssueCode.invalidRecord,
         operation: 'validateAccount',

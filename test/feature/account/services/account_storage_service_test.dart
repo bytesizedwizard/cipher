@@ -70,6 +70,32 @@ void main() {
       expect(decoded.version, currentStoredAccountVersion);
     });
 
+    test('migrates version one records before returning them', () async {
+      final backend = FakeAccountStorageBackend();
+      final account = testAccount();
+      final legacyJson =
+          jsonDecode(
+                jsonEncode(
+                  StoredAccountRecord(
+                    account: account.copyWith(otp: null),
+                    encodedSecret: base64Encode(utf8.encode(secret)),
+                    version: 1,
+                  ).toJson(),
+                ),
+              )
+              as Map<String, dynamic>;
+      (legacyJson['account'] as Map<String, dynamic>).remove('counter');
+      backend.secure[account.storageId] = jsonEncode(legacyJson);
+
+      final result = await AccountStorageService(backend: backend).loadAll();
+
+      expect(result.issues, isEmpty);
+      expect(result.accounts.single.counter, 0);
+      final migrated = jsonDecode(backend.secure[account.storageId]! as String);
+      expect(migrated['version'], currentStoredAccountVersion);
+      expect(migrated['account']['counter'], 0);
+    });
+
     test('removes a record when write verification fails', () async {
       final backend = FakeAccountStorageBackend();
       final account = testAccount();
@@ -105,16 +131,16 @@ void main() {
     test('migrates legacy split records idempotently', () async {
       final backend = FakeAccountStorageBackend();
       final account = testAccount();
-      backend.preferences[account.id] = jsonEncode(account.toJson());
-      backend.secure[legacySecretStorageKey(account.id)] = base64Encode(
+      backend.preferences[account.legacyId] = jsonEncode(account.toJson());
+      backend.secure[legacySecretStorageKey(account.legacyId)] = base64Encode(
         utf8.encode(secret),
       );
       final service = AccountStorageService(backend: backend);
 
       expect(await service.migrateLegacyAccounts(), isEmpty);
-      expect(backend.preferences.containsKey(account.id), isFalse);
+      expect(backend.preferences.containsKey(account.legacyId), isFalse);
       expect(
-        backend.secure.containsKey(legacySecretStorageKey(account.id)),
+        backend.secure.containsKey(legacySecretStorageKey(account.legacyId)),
         isFalse,
       );
       expect(backend.secure.containsKey(account.storageId), isTrue);
@@ -125,13 +151,13 @@ void main() {
     test('retains legacy metadata when secret is missing', () async {
       final backend = FakeAccountStorageBackend();
       final account = testAccount();
-      backend.preferences[account.id] = jsonEncode(account.toJson());
+      backend.preferences[account.legacyId] = jsonEncode(account.toJson());
       final service = AccountStorageService(backend: backend);
 
       final issues = await service.migrateLegacyAccounts();
 
       expect(issues.single.code, AccountStorageIssueCode.missingSecret);
-      expect(backend.preferences.containsKey(account.id), isTrue);
+      expect(backend.preferences.containsKey(account.legacyId), isTrue);
     });
 
     test('deletes authoritative and legacy records', () async {
@@ -139,17 +165,17 @@ void main() {
       final account = testAccount();
       final service = AccountStorageService(backend: backend);
       await service.save(account, secret);
-      backend.preferences[account.id] = jsonEncode(account.toJson());
-      backend.secure[legacySecretStorageKey(account.id)] = base64Encode(
+      backend.preferences[account.legacyId] = jsonEncode(account.toJson());
+      backend.secure[legacySecretStorageKey(account.legacyId)] = base64Encode(
         utf8.encode(secret),
       );
 
       await service.delete(account);
 
-      expect(backend.preferences.containsKey(account.id), isFalse);
+      expect(backend.preferences.containsKey(account.legacyId), isFalse);
       expect(backend.secure.containsKey(account.storageId), isFalse);
       expect(
-        backend.secure.containsKey(legacySecretStorageKey(account.id)),
+        backend.secure.containsKey(legacySecretStorageKey(account.legacyId)),
         isFalse,
       );
     });
