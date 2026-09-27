@@ -6,22 +6,58 @@ part of 'settings_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$settingsControllerHash() =>
-    r'0fced49ee1db165b2cf28bf57d9dd0f96d54de0c';
+// GENERATED CODE - DO NOT MODIFY BY HAND
+// ignore_for_file: type=lint, type=warning
 
-/// See also [SettingsController].
 @ProviderFor(SettingsController)
-final settingsControllerProvider =
-    NotifierProvider<SettingsController, SettingsState>.internal(
-      SettingsController.new,
-      name: r'settingsControllerProvider',
-      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-          ? null
-          : _$settingsControllerHash,
-      dependencies: null,
-      allTransitiveDependencies: null,
-    );
+final settingsControllerProvider = SettingsControllerProvider._();
 
-typedef _$SettingsController = Notifier<SettingsState>;
-// ignore_for_file: type=lint
-// ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package
+final class SettingsControllerProvider
+    extends $NotifierProvider<SettingsController, SettingsState> {
+  SettingsControllerProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'settingsControllerProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$settingsControllerHash();
+
+  @$internal
+  @override
+  SettingsController create() => SettingsController();
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(SettingsState value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<SettingsState>(value),
+    );
+  }
+}
+
+String _$settingsControllerHash() =>
+    r'02653744e1c42e97cb61f2a68c0001c5a91a768d';
+
+abstract class _$SettingsController extends $Notifier<SettingsState> {
+  SettingsState build();
+  @$mustCallSuper
+  @override
+  void runBuild() {
+    final ref = this.ref as $Ref<SettingsState, SettingsState>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<SettingsState, SettingsState>,
+              SettingsState,
+              Object?,
+              Object?
+            >;
+    element.handleCreate(ref, build);
+  }
+}

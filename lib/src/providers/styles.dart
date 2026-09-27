@@ -1,6 +1,5 @@
 import 'package:cipher/src/providers/colors.dart';
 import 'package:flutter/rendering.dart';
-import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'styles.g.dart';

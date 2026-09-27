@@ -6,22 +6,44 @@ part of 'platform.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$platformInfoHash() => r'aa225e3d9f63cdaca83406efbd28fdbcf0580bbe';
+// GENERATED CODE - DO NOT MODIFY BY HAND
+// ignore_for_file: type=lint, type=warning
 
-/// See also [platformInfo].
 @ProviderFor(platformInfo)
-final platformInfoProvider = AutoDisposeFutureProvider<PackageInfo>.internal(
-  platformInfo,
-  name: r'platformInfoProvider',
-  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-      ? null
-      : _$platformInfoHash,
-  dependencies: null,
-  allTransitiveDependencies: null,
-);
+final platformInfoProvider = PlatformInfoProvider._();
 
-@Deprecated('Will be removed in 3.0. Use Ref instead')
-// ignore: unused_element
-typedef PlatformInfoRef = AutoDisposeFutureProviderRef<PackageInfo>;
-// ignore_for_file: type=lint
-// ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package
+final class PlatformInfoProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<PackageInfo>,
+          PackageInfo,
+          FutureOr<PackageInfo>
+        >
+    with $FutureModifier<PackageInfo>, $FutureProvider<PackageInfo> {
+  PlatformInfoProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'platformInfoProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$platformInfoHash();
+
+  @$internal
+  @override
+  $FutureProviderElement<PackageInfo> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<PackageInfo> create(Ref ref) {
+    return platformInfo(ref);
+  }
+}
+
+String _$platformInfoHash() => r'aa225e3d9f63cdaca83406efbd28fdbcf0580bbe';

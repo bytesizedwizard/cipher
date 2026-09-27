@@ -23,7 +23,7 @@ class BottomBar extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final palette = ref.watch(colorPaletteProvider);
 
-    final currentIndex = ref.watch(bottomBarIndexNotifierProvider);
+    final currentIndex = ref.watch(bottomBarIndexProvider);
 
     return Container(
       decoration: BoxDecoration(
@@ -40,7 +40,7 @@ class BottomBar extends HookConsumerWidget {
         onTap: (index) {
           if (index != currentIndex) {
             // Update provider and navigate
-            ref.read(bottomBarIndexNotifierProvider.notifier).setIndex(index);
+            ref.read(bottomBarIndexProvider.notifier).setIndex(index);
 
             switch (index) {
               case 0:

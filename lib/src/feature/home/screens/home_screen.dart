@@ -9,6 +9,7 @@ import 'package:cipher/src/feature/settings/models/settings_models.dart';
 import 'package:cipher/src/feature/settings/providers/settings_provider.dart';
 import 'package:cipher/src/providers/colors.dart';
 import 'package:cipher/src/providers/platform.dart';
+import 'package:cipher/src/providers/secure_clipboard_provider.dart';
 import 'package:cipher/src/providers/styles.dart';
 import 'package:cipher/src/ui/widgets/app_bar.dart';
 import 'package:cipher/src/ui/widgets/bottom_bars.dart';
@@ -33,7 +34,7 @@ class HomeScreen extends HookConsumerWidget {
     final textStyle = ref.watch(textStyleProvider);
 
     final accountState = ref.watch(authControllerProvider);
-    final items = accountState.valueOrNull?.values ?? const <AccountView>[];
+    final items = accountState.value?.values ?? const <AccountView>[];
     final settings = ref.watch(settingsControllerProvider);
 
     // Sort accounts based on current sort field
@@ -285,31 +286,15 @@ class HomeScreen extends HookConsumerWidget {
                 contentPadding: const EdgeInsets.symmetric(horizontal: 20),
                 isThreeLine: false,
                 onTap: () {
-                  // copy to clipboard
-                  Clipboard.setData(ClipboardData(text: item.otp));
                   HapticFeedback.mediumImpact();
-
-                  final settingsNotifier = ref.read(settingsControllerProvider);
-
-                  settingsNotifier.whenOrNull(
-                    loaded: (settings) {
-                      if (settings.clipboardTimeout > 0) {
-                        Future.delayed(
-                          Duration(milliseconds: settings.clipboardTimeout),
-                          () {
-                            Clipboard.setData(const ClipboardData(text: ''));
-                          },
-                        );
-                      }
-                    },
-                  );
-
-                  ScaffoldMessenger.of(
-                    context,
-                  ).showSnackBar(const SnackBar(content: Text('Copied')));
+                  unawaited(_copyPasscode(context, ref, item.otp));
                 },
                 onLongPress: () {
-                  context.push("/auth/view", extra: item.account.id);
+                  final location = Uri(
+                    path: '/auth/view',
+                    queryParameters: {'id': item.account.id},
+                  ).toString();
+                  context.push(location);
                 },
                 subtitle: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -333,10 +318,12 @@ class HomeScreen extends HookConsumerWidget {
                 ),
                 style: ListTileStyle.list,
                 horizontalTitleGap: 14,
-                trailing: CircularTimer(
-                  secondsLeft: item.secondsLeft,
-                  totalSeconds: AuthConstants.defaultPeriod,
-                ),
+                trailing: item.account.type == AuthConstants.hotp
+                    ? const SizedBox(width: 48)
+                    : CircularTimer(
+                        secondsLeft: item.secondsLeft,
+                        totalSeconds: item.account.period,
+                      ),
               ),
               Divider(indent: 16, endIndent: 16),
             ],
@@ -344,6 +331,34 @@ class HomeScreen extends HookConsumerWidget {
         );
       },
     );
+  }
+
+  Future<void> _copyPasscode(
+    BuildContext context,
+    WidgetRef ref,
+    String passcode,
+  ) async {
+    try {
+      final settings = ref.read(settingsControllerProvider);
+      final timeout = settings.maybeWhen(
+        loaded: (value) => value.clipboardTimeout,
+        orElse: () => 0,
+      );
+      await ref
+          .read(secureClipboardServiceProvider)
+          .copy(passcode, timeoutMilliseconds: timeout);
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Copied')));
+      }
+    } on Object {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Unable to copy passcode.')),
+        );
+      }
+    }
   }
 }
 

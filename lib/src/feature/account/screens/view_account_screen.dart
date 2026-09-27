@@ -1,15 +1,19 @@
+import 'dart:async';
+
 import 'package:cipher/src/feature/account/providers/auth_providers.dart';
 import 'package:cipher/src/feature/account/models/errors.dart';
 import 'package:cipher/src/feature/account/utils/constants.dart';
 import 'package:cipher/src/feature/account/widgets/delete_account_dialog.dart';
 import 'package:cipher/src/feature/account/widgets/issuer_logo.dart';
+import 'package:cipher/src/feature/settings/models/settings_models.dart';
+import 'package:cipher/src/feature/settings/providers/settings_provider.dart';
 import 'package:cipher/src/providers/colors.dart';
+import 'package:cipher/src/providers/secure_clipboard_provider.dart';
 import 'package:cipher/src/providers/styles.dart';
 import 'package:cipher/src/ui/widgets/app_bar.dart';
 import 'package:cipher/src/ui/widgets/buttons.dart';
 import 'package:cipher/src/ui/widgets/cards.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:gap/gap.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:material_symbols_icons/material_symbols_icons.dart';
@@ -25,7 +29,7 @@ class ViewAccountScreen extends ConsumerWidget {
     final colors = ref.watch(colorPaletteProvider);
 
     final accountState = ref.watch(authControllerProvider);
-    final items = accountState.valueOrNull?.values ?? const <AccountView>[];
+    final items = accountState.value?.values ?? const <AccountView>[];
     AccountView? item;
     for (final candidate in items) {
       if (candidate.account.id == id) {
@@ -101,14 +105,15 @@ class ViewAccountScreen extends ConsumerWidget {
                       colors,
                     ),
                     const Gap(10),
-                    LinearProgressIndicator(
-                      value:
-                          1 -
-                          selectedItem.secondsLeft /
-                              AuthConstants.defaultPeriod,
-                      color: colors.accent,
-                      backgroundColor: colors.accent.withValues(alpha: 0.1),
-                    ),
+                    if (selectedItem.account.type == AuthConstants.totp)
+                      LinearProgressIndicator(
+                        value:
+                            1 -
+                            selectedItem.secondsLeft /
+                                selectedItem.account.period,
+                        color: colors.accent,
+                        backgroundColor: colors.accent.withValues(alpha: 0.1),
+                      ),
                     const Gap(10),
                   ],
                 ),
@@ -123,15 +128,29 @@ class ViewAccountScreen extends ConsumerWidget {
                 border: BorderSide(color: colors.border, width: 1),
                 label: "Copy Passcode",
                 onPressed: () {
-                  // copy to clipboard
-                  Clipboard.setData(ClipboardData(text: selectedItem.otp));
-                  ScaffoldMessenger.of(
-                    context,
-                  ).showSnackBar(const SnackBar(content: Text('Copied')));
+                  unawaited(_copyPasscode(context, ref, selectedItem.otp));
                 },
                 semanticLabel: "Copy Passcode",
               ),
               const Gap(10),
+              if (selectedItem.account.type == AuthConstants.hotp)
+                SemanticElevatedButton(
+                  icon: const Icon(Symbols.refresh),
+                  buttonColor: colors.primary,
+                  elevation: 0,
+                  labelColor: colors.accent,
+                  iconColor: colors.accent,
+                  border: BorderSide(color: colors.border, width: 1),
+                  label: "Next Code",
+                  onPressed: () {
+                    unawaited(
+                      _advanceHotp(context, ref, selectedItem.account.id),
+                    );
+                  },
+                  semanticLabel: "Next HOTP Code",
+                ),
+              if (selectedItem.account.type == AuthConstants.hotp)
+                const Gap(10),
               SemanticElevatedButton(
                 icon: const Icon(Symbols.delete),
                 buttonColor: colors.error,
@@ -183,6 +202,55 @@ class ViewAccountScreen extends ConsumerWidget {
       return error.message;
     }
     return 'Unable to load accounts.';
+  }
+
+  Future<void> _copyPasscode(
+    BuildContext context,
+    WidgetRef ref,
+    String passcode,
+  ) async {
+    try {
+      final settings = ref.read(settingsControllerProvider);
+      final timeout = settings.maybeWhen(
+        loaded: (value) => value.clipboardTimeout,
+        orElse: () => 0,
+      );
+      await ref
+          .read(secureClipboardServiceProvider)
+          .copy(passcode, timeoutMilliseconds: timeout);
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Copied')));
+      }
+    } on Object {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Unable to copy passcode.')),
+        );
+      }
+    }
+  }
+
+  Future<void> _advanceHotp(
+    BuildContext context,
+    WidgetRef ref,
+    String id,
+  ) async {
+    try {
+      await ref.read(authControllerProvider.notifier).nextHotp(id);
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Code advanced')));
+      }
+    } on Object {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Unable to advance code.')),
+        );
+      }
+    }
   }
 
   Widget _itemTile(

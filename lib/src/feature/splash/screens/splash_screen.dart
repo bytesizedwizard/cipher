@@ -2,6 +2,7 @@ import 'package:cipher/src/feature/settings/models/settings_models.dart';
 import 'package:cipher/src/feature/settings/providers/settings_provider.dart';
 import 'package:cipher/src/feature/splash/providers/transition_provider.dart';
 import 'package:cipher/src/feature/splash/state/splash.dart';
+import 'package:cipher/src/providers/app_lock_provider.dart';
 import 'package:cipher/src/providers/colors.dart';
 import 'package:cipher/src/providers/styles.dart';
 import 'package:cipher/src/ui/widgets/buttons.dart';
@@ -37,9 +38,7 @@ class SplashScreen extends HookConsumerWidget {
           if (settings.biometricAuthEnabled) {
             _performAuthentication(ref);
           } else {
-            final transitionNotifier = ref.read(
-              transitionNotifierProvider.notifier,
-            );
+            final transitionNotifier = ref.read(transitionProvider.notifier);
             transitionNotifier.start(const Duration(seconds: 2));
           }
         });
@@ -48,7 +47,7 @@ class SplashScreen extends HookConsumerWidget {
     }, [settings?.biometricAuthEnabled, hasInitialized.value]);
 
     // Listen for navigation transitions
-    ref.listen(transitionNotifierProvider, (previous, next) {
+    ref.listen(transitionProvider, (previous, next) {
       next.maybeWhen(
         transition: () {
           if (context.mounted) {
@@ -59,7 +58,7 @@ class SplashScreen extends HookConsumerWidget {
       );
     });
 
-    final state = ref.watch(transitionNotifierProvider);
+    final state = ref.watch(transitionProvider);
 
     return state.maybeWhen(
       initial: () => _buildLogo(),
@@ -71,11 +70,11 @@ class SplashScreen extends HookConsumerWidget {
 
   /// Performs biometric authentication with proper error handling
   Future<void> _performAuthentication(WidgetRef ref) async {
-    final transitionNotifier = ref.read(transitionNotifierProvider.notifier);
+    final transitionNotifier = ref.read(transitionProvider.notifier);
 
     try {
       final status = await ref
-          .read(settingsControllerProvider.notifier)
+          .read(appLockControllerProvider.notifier)
           .authenticate();
 
       switch (status) {
@@ -85,17 +84,18 @@ class SplashScreen extends HookConsumerWidget {
         case BiometricAuthStatus.failure:
         case BiometricAuthStatus.lockout:
           transitionNotifier.authRequired();
+          break;
         case BiometricAuthStatus.disabled:
-          // Proceed without authentication if biometrics unavailable
           transitionNotifier.start(const Duration(seconds: 2));
           break;
-        default:
+        case BiometricAuthStatus.noBiometricHardware:
+        case BiometricAuthStatus.unknown:
           transitionNotifier.error(
-            'Biometric authentication failed or not supported. Please check your device settings.',
+            'Biometric authentication is unavailable. Check your device settings and try again.',
           );
       }
     } catch (error) {
-      transitionNotifier.error('Authentication failed: $error');
+      transitionNotifier.error('Authentication failed. Please try again.');
     }
   }
 

@@ -4,7 +4,8 @@ import 'package:cipher/src/feature/account/models/auth_models.dart';
 import 'package:cipher/src/feature/account/models/errors.dart';
 import 'package:cipher/src/feature/account/services/auth_service.dart';
 import 'package:cipher/src/feature/account/services/totp_service.dart';
-import 'package:flutter/widgets.dart';
+import 'package:cipher/src/feature/account/utils/constants.dart';
+import 'package:cipher/src/providers/app_lock_provider.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'auth_providers.g.dart';
@@ -22,30 +23,45 @@ class AccountView {
 }
 
 @Riverpod(keepAlive: true)
-class AuthController extends _$AuthController with WidgetsBindingObserver {
+class AuthController extends _$AuthController {
   Timer? _ticker;
   List<Account> _accounts = [];
   Future<Map<String, AccountView>>? _activeRefresh;
   Future<void> _operationQueue = Future<void>.value();
   final Completer<void> _initialized = Completer<void>();
+  var _locked = true;
+  var _refreshGeneration = 0;
 
   AuthService get _authService => ref.read(authServiceProvider);
   TotpService get _totpService => ref.read(totpServiceProvider);
 
   @override
   Future<Map<String, AccountView>> build() async {
-    WidgetsBinding.instance.addObserver(this);
+    ref.listen<AppLockStatus>(appLockControllerProvider, (_, next) {
+      unawaited(
+        _handleLockState(next).onError((Object error, StackTrace stackTrace) {
+          state = AsyncError<Map<String, AccountView>>(
+            _safeError(error),
+            stackTrace,
+          );
+        }),
+      );
+    });
     ref.onDispose(() {
-      WidgetsBinding.instance.removeObserver(this);
       _ticker?.cancel();
       _ticker = null;
     });
+    _locked = ref.read(appLockControllerProvider) != AppLockStatus.unlocked;
 
     try {
       final migrationIssues = await _authService.migrateLegacyAccounts();
       _accounts = await _authService.getAccounts('');
       if (_accounts.isEmpty && migrationIssues.isNotEmpty) {
         throw migrationIssues.first;
+      }
+
+      if (_locked) {
+        return const <String, AccountView>{};
       }
 
       final views = await _buildViews(_accounts);
@@ -91,28 +107,22 @@ class AuthController extends _$AuthController with WidgetsBindingObserver {
     });
   }
 
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.paused ||
-        state == AppLifecycleState.inactive) {
-      _ticker?.cancel();
-      _ticker = null;
-      return;
-    }
-
-    if (state == AppLifecycleState.resumed) {
-      unawaited(
-        _enqueue(() async {
-          await _initialized.future;
-          _accounts = await _authService.getAccounts('');
-          await _publishRefresh(forceLatest: true, propagateError: true);
-          _startTicker();
-        }).catchError((_) {}),
-      );
-    }
+  Future<void> nextHotp(String id) {
+    return _enqueue(() async {
+      await _initialized.future;
+      if (_locked) {
+        return;
+      }
+      await _authService.advanceHotp(id);
+      _accounts = await _authService.getAccounts('');
+      await _publishRefresh(forceLatest: true, propagateError: true);
+    });
   }
 
   void _startTicker() {
+    if (_locked) {
+      return;
+    }
     _ticker?.cancel();
     _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
       unawaited(_publishRefresh(forceLatest: false, propagateError: false));
@@ -127,12 +137,17 @@ class AuthController extends _$AuthController with WidgetsBindingObserver {
       final next = await _refreshViews(forceLatest: forceLatest);
       state = AsyncData(Map.unmodifiable(next));
     } catch (error, stackTrace) {
+      if (error is _StaleRefreshException) {
+        return;
+      }
       final safeError = _safeError(error);
       final previous = state;
-      state = AsyncError<Map<String, AccountView>>(
+      final errorState = AsyncError<Map<String, AccountView>>(
         safeError,
         stackTrace,
-      ).copyWithPrevious(previous, isRefresh: false);
+      );
+      // ignore: invalid_use_of_internal_member
+      state = errorState.copyWithPrevious(previous, isRefresh: false);
       if (propagateError) {
         throw safeError;
       }
@@ -168,13 +183,22 @@ class AuthController extends _$AuthController with WidgetsBindingObserver {
   }
 
   Future<Map<String, AccountView>> _buildViews(List<Account> accounts) async {
+    final generation = _refreshGeneration;
     final nowUtc = DateTime.now().toUtc();
     final epoch = nowUtc.millisecondsSinceEpoch ~/ 1000;
     final next = <String, AccountView>{};
 
     for (final account in accounts) {
+      if (_locked || generation != _refreshGeneration) {
+        throw const _StaleRefreshException();
+      }
       final otp = await _totpService.refresh(account);
-      final secondsLeft = account.period - (epoch % account.period);
+      if (_locked || generation != _refreshGeneration) {
+        throw const _StaleRefreshException();
+      }
+      final secondsLeft = account.type == AuthConstants.hotp
+          ? 0
+          : account.period - (epoch % account.period);
       next[account.id] = AccountView(
         account: account,
         otp: otp,
@@ -183,6 +207,28 @@ class AuthController extends _$AuthController with WidgetsBindingObserver {
     }
 
     return next;
+  }
+
+  Future<void> _handleLockState(AppLockStatus lockState) async {
+    if (lockState != AppLockStatus.unlocked) {
+      _locked = true;
+      _refreshGeneration++;
+      _ticker?.cancel();
+      _ticker = null;
+      state = const AsyncData(<String, AccountView>{});
+      return;
+    }
+
+    _locked = false;
+    await _enqueue(() async {
+      await _initialized.future;
+      if (_locked) {
+        return;
+      }
+      _accounts = await _authService.getAccounts('');
+      await _publishRefresh(forceLatest: true, propagateError: true);
+      _startTicker();
+    });
   }
 
   Future<void> _enqueue(Future<void> Function() operation) {
@@ -209,10 +255,12 @@ class AuthController extends _$AuthController with WidgetsBindingObserver {
         }
         if (state.hasValue || state.hasError) {
           final previousState = state;
-          state = AsyncError<Map<String, AccountView>>(
+          final errorState = AsyncError<Map<String, AccountView>>(
             safeError,
             stackTrace,
-          ).copyWithPrevious(previousState, isRefresh: false);
+          );
+          // ignore: invalid_use_of_internal_member
+          state = errorState.copyWithPrevious(previousState, isRefresh: false);
         }
       }
     }();
@@ -226,4 +274,8 @@ class AuthController extends _$AuthController with WidgetsBindingObserver {
     }
     return StateError('Unable to load accounts.');
   }
+}
+
+class _StaleRefreshException implements Exception {
+  const _StaleRefreshException();
 }

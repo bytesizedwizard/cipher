@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:cipher/src/feature/account/utils/constants.dart';
@@ -30,6 +31,7 @@ class SettingsController extends _$SettingsController {
     biometricAuthEnabled: SettingsConstants.defaultBiometricAuthEnabled,
   );
   StorageService get _storageService => ref.read(storageServiceProvider);
+  Future<void>? _loadOperation;
 
   @override
   SettingsState build() {
@@ -37,17 +39,40 @@ class SettingsController extends _$SettingsController {
   }
 
   Future<void> loadSettings() async {
-    final settingsEncoded = await _storageService.read(
-      SettingsConstants.storageKey,
-      StorageSource.sharedPreferences,
-    );
-    final settingsDecoded =
-        jsonDecode(settingsEncoded ?? '{}') as Map<String, dynamic>;
+    final activeLoad = _loadOperation;
+    if (activeLoad != null) {
+      return activeLoad;
+    }
+    if (state.maybeWhen(loaded: (_) => true, orElse: () => false)) {
+      return;
+    }
 
-    if (settingsDecoded.isNotEmpty) {
-      state = SettingsState.loaded(Settings.fromJson(settingsDecoded));
-    } else {
-      state = SettingsState.loaded(_defaultSettings);
+    final load = _loadSettings();
+    _loadOperation = load;
+    await load.whenComplete(() {
+      if (identical(_loadOperation, load)) {
+        _loadOperation = null;
+      }
+    });
+  }
+
+  Future<void> _loadSettings() async {
+    state = const SettingsState.loading();
+    try {
+      final settingsEncoded = await _storageService.read(
+        SettingsConstants.storageKey,
+        StorageSource.sharedPreferences,
+      );
+      final settingsDecoded =
+          jsonDecode(settingsEncoded ?? '{}') as Map<String, dynamic>;
+
+      if (settingsDecoded.isNotEmpty) {
+        state = SettingsState.loaded(Settings.fromJson(settingsDecoded));
+      } else {
+        state = SettingsState.loaded(_defaultSettings);
+      }
+    } on Object {
+      state = const SettingsState.error('Unable to load application settings.');
     }
   }
 
@@ -81,9 +106,7 @@ class SettingsController extends _$SettingsController {
     );
   }
 
-  Future<BiometricAuthStatus> authenticate({
-    bool bypassIfDisabled = false,
-  }) async {
+  Future<BiometricAuthStatus> authenticate() async {
     try {
       LocalAuthentication localAuth = LocalAuthentication();
       bool isAuthenticated = await localAuth.authenticate(

@@ -9,4 +9,13 @@ void main() {
 
     expect(find.byType(CircularProgressIndicator), findsOneWidget);
   });
+
+  testWidgets('explains unsupported platform scope', (tester) async {
+    await tester.pumpWidget(const UnsupportedPlatformApp());
+
+    expect(
+      find.text('Cipher currently supports Android and iOS only.'),
+      findsOneWidget,
+    );
+  });
 }

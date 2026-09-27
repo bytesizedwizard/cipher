@@ -36,17 +36,11 @@ class Settings with _$Settings {
   final bool biometricAuthEnabled;
 
   @override
-  @JsonKey(
-    name: 'do_not_show_beta_disclaimer',
-    defaultValue: false,
-  )
+  @JsonKey(name: 'do_not_show_beta_disclaimer', defaultValue: false)
   final bool doNotShowBetaDisclaimer;
 
   @override
-  @JsonKey(
-    name: 'sort_field',
-    defaultValue: AccountSortField.dateAddedNewest,
-  )
+  @JsonKey(name: 'sort_field', defaultValue: AccountSortField.dateAddedNewest)
   final AccountSortField sortField;
 
   const Settings({

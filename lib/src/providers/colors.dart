@@ -2,7 +2,6 @@ import 'package:cipher/src/feature/settings/models/settings_models.dart';
 import 'package:cipher/src/feature/settings/providers/settings_provider.dart';
 import 'package:flutter/material.dart'
     show Color, WidgetsBinding, Brightness, ThemeMode;
-import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'colors.g.dart';

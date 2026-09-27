@@ -31,9 +31,7 @@ class CircularTimer extends HookConsumerWidget {
         painter: _CircularTimerPainter(
           progress: value.clamp(0.0, 1.0),
           trackColor: palette.border,
-          progressColor: isUrgent
-              ? const Color(0xFFE53935)
-              : palette.accent,
+          progressColor: isUrgent ? const Color(0xFFE53935) : palette.accent,
           strokeWidth: 3,
         ),
       ),

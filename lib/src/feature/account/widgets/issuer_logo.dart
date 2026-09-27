@@ -83,11 +83,7 @@ class IssuerLogo extends ConsumerWidget {
     return CircleAvatar(
       radius: size / 2,
       backgroundColor: palette.accent.withValues(alpha: 0.1),
-      child: Icon(
-        Icons.key,
-        color: palette.accent,
-        size: size * 0.5,
-      ),
+      child: Icon(Icons.key, color: palette.accent, size: size * 0.5),
     );
   }
 

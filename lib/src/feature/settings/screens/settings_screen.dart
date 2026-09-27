@@ -469,9 +469,7 @@ class UpdateSettingScreen extends ConsumerWidget {
                     value: settings.biometricAuthEnabled,
                     onChanged: (value) {
                       if (value) {
-                        settingsNotifier.authenticate(bypassIfDisabled: true).then((
-                          status,
-                        ) {
+                        settingsNotifier.authenticate().then((status) {
                           if (status == BiometricAuthStatus.success) {
                             settingsNotifier.updateBiometricAuthEnabled(true);
                           } else {

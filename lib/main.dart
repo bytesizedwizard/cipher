@@ -1,28 +1,63 @@
+import 'dart:async';
+
 import 'package:cipher/src/feature/settings/models/settings_models.dart';
 import 'package:cipher/src/feature/settings/providers/settings_provider.dart';
 import 'package:cipher/src/providers/colors.dart';
 import 'package:cipher/src/routes.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
 
-  runApp(
-    ProviderScope(
-      child: Consumer(
-        builder: (context, ref, _) {
-          final settingsNotifier = ref.watch(
-            settingsControllerProvider.notifier,
-          );
+  if (kIsWeb ||
+      (defaultTargetPlatform != TargetPlatform.android &&
+          defaultTargetPlatform != TargetPlatform.iOS)) {
+    runApp(const UnsupportedPlatformApp());
+    return;
+  }
 
-          settingsNotifier.loadSettings();
+  runApp(ProviderScope(child: const CipherBootstrap()));
+}
 
-          return const CipherApp();
-        },
+class UnsupportedPlatformApp extends StatelessWidget {
+  const UnsupportedPlatformApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const MaterialApp(
+      home: Scaffold(
+        body: Center(
+          child: Padding(
+            padding: EdgeInsets.all(24),
+            child: Text(
+              'Cipher currently supports Android and iOS only.',
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ),
       ),
-    ),
-  );
+    );
+  }
+}
+
+class CipherBootstrap extends ConsumerStatefulWidget {
+  const CipherBootstrap({super.key});
+
+  @override
+  ConsumerState<CipherBootstrap> createState() => _CipherBootstrapState();
+}
+
+class _CipherBootstrapState extends ConsumerState<CipherBootstrap> {
+  @override
+  void initState() {
+    super.initState();
+    unawaited(ref.read(settingsControllerProvider.notifier).loadSettings());
+  }
+
+  @override
+  Widget build(BuildContext context) => const CipherApp();
 }
 
 class CipherApp extends ConsumerWidget {
@@ -33,6 +68,7 @@ class CipherApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final palette = ref.watch(colorPaletteProvider);
     final settings = ref.watch(settingsControllerProvider);
+    final appRouter = ref.watch(routerProvider);
 
     return settings.maybeWhen(
       orElse: () {
@@ -129,7 +165,7 @@ class CipherApp extends ConsumerWidget {
             ),
           ),
           themeMode: settings.themeMode,
-          routerConfig: router,
+          routerConfig: appRouter,
         );
       },
     );
