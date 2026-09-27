@@ -13,6 +13,27 @@ val keystorePropertiesFile = rootProject.file("key.properties")
 if (keystorePropertiesFile.exists()) {
     keystoreProperties.load(FileInputStream(keystorePropertiesFile))
 }
+val releaseKeyAlias =
+    System.getenv("ANDROID_KEY_ALIAS") ?: keystoreProperties["keyAlias"]?.toString()
+val releaseKeyPassword =
+    System.getenv("ANDROID_KEY_PASSWORD") ?: keystoreProperties["keyPassword"]?.toString()
+val releaseStoreFile =
+    System.getenv("ANDROID_STORE_FILE") ?: keystoreProperties["storeFile"]?.toString()
+val releaseStorePassword =
+    System.getenv("ANDROID_STORE_PASSWORD") ?: keystoreProperties["storePassword"]?.toString()
+val releaseSigningAvailable =
+    releaseKeyAlias != null &&
+        releaseKeyPassword != null &&
+        releaseStoreFile != null &&
+        releaseStorePassword != null
+
+if (gradle.startParameter.taskNames.any { it.contains("release", ignoreCase = true) } &&
+    !releaseSigningAvailable
+) {
+    throw GradleException(
+        "Release signing is not configured. Provide android/key.properties or the ANDROID_* signing variables.",
+    )
+}
 
 android {
     namespace = "dev.bytesizedwizard.cipherauth"
@@ -41,10 +62,10 @@ android {
 
     signingConfigs {
         create("release") {
-            keyAlias = keystoreProperties["keyAlias"] as String
-            keyPassword = keystoreProperties["keyPassword"] as String
-            storeFile = keystoreProperties["storeFile"]?.let { file(it) }
-            storePassword = keystoreProperties["storePassword"] as String
+            keyAlias = releaseKeyAlias
+            keyPassword = releaseKeyPassword
+            storeFile = releaseStoreFile?.let { file(it) }
+            storePassword = releaseStorePassword
         }
     }
 
